@@ -1,0 +1,3827 @@
+openapi: 3.0.3
+info:
+  contact:
+    email: info@blockdaemon.com
+    name: Blockdaemon
+    url: https://blockdaemon.com
+  title: Institutional Wallet
+  version: 2.0.0
+servers:
+  - url: https://{domain}
+    variables:
+      domain:
+        default: my-customer-env.blockdaemon-wallet.com
+        description: The domain name of the server
+tags:
+  - name: Accounts
+  - name: Addresses
+  - name: Assets
+  - name: Audit Logs
+  - name: Cold Wallet
+  - name: Config
+  - name: Events
+  - name: Groups
+  - name: Key Backups
+  - name: Policies
+  - name: Compliance
+  - name: Staking
+  - name: Automated Approvers
+  - name: Transactions
+  - name: Operations
+  - name: Users
+x-tagGroups:
+  - name: Resources
+    tags:
+      - Accounts
+      - Addresses
+      - Assets
+      - Cold Wallet
+      - Config
+      - Events
+      - Groups
+      - Key Backups
+      - Policies
+      - Compliance
+      - Staking
+      - Automated Approvers
+      - Transactions
+      - Operations
+      - Users
+components:
+  parameters:
+    AccountIDPath:
+      name: accountID
+      in: path
+      required: true
+      description: ID of the account targeted by the request (path version; see also AccountIDQuery)
+      schema:
+        type: integer
+        format: int64
+    AccountIDQuery:
+      name: accountID
+      in: query
+      description: |
+        ID of the account targeted by the request (query version; see also
+        AccountIDPath). When used in filtering transactions, it's either the
+        source or destination account ID in a transaction and takes precedence
+        over other account related filters.
+      schema:
+        type: integer
+        format: int64
+    AccountIDs:
+      in: query
+      name: accountIDs
+      required: false
+      schema:
+        type: array
+        items:
+          type: integer
+          format: int64
+      example: [1, 2, 3]
+    AddressID:
+      name: addressID
+      in: path
+      required: true
+      description: ID of the address targeted by the request
+      schema:
+        type: integer
+        format: int64
+    AutomatedApproverID:
+      name: automatedApproverID
+      in: path
+      required: true
+      description: ID of the automated approver
+      schema:
+        type: integer
+        format: int64
+    AssetIDPath:
+      name: assetID
+      in: path
+      required: true
+      description: ID of the asset targeted by the request (path version; see also AssetIDQuery)
+      schema:
+        type: integer
+        format: int64
+    AssetIDQuery:
+      name: assetID
+      in: query
+      description: ID of the asset targeted by the request (query version; see also AssetIDPath)
+      schema:
+        type: integer
+        format: int64
+    AssetIDs:
+      description: Array of asset IDs
+      in: query
+      name: assetIDs
+      required: false
+      schema:
+        type: array
+        items:
+          type: integer
+          format: int64
+      example: [1, 2, 3]
+    CreatedAfter:
+      description: Filter used to find the resources created after a time-stamp.
+      in: query
+      name: createdAfter
+      required: false
+      schema:
+        type: string
+        format: data-time
+    CreatedBefore:
+      description: Filter used to find the resources created before a time-stamp.
+      in: query
+      name: createdBefore
+      required: false
+      schema:
+        type: string
+        format: data-time
+    Creator:
+      description: ID of the user who created the resource
+      in: query
+      name: creator
+      required: false
+      schema:
+        type: integer
+        format: int64
+    Page:
+      description: Page number
+      name: page
+      in: query
+      required: true
+      schema:
+        type: integer
+    PageSize:
+      description: Page size
+      name: pageSize
+      in: query
+      required: true
+      schema:
+        type: integer
+    SourceAcc:
+      schema:
+        type: array
+        items:
+          type: string
+      description: SourceAcc denotes the vault ID's to filter on
+      name: source_acc
+      in: query
+    SourceExt:
+      schema:
+        type: array
+        items:
+          type: string
+      description: SourceExt denotes the external addresses to filter on
+      name: source_ext
+      in: query
+    DestinationAcc:
+      schema:
+        type: array
+        items:
+          type: string
+      description: DestinationAcc denotes the vault ID's to filter on
+      name: destination_acc
+      in: query
+    DestinationExt:
+      schema:
+        type: array
+        items:
+          type: string
+      description: DestinationExt denotes the external addresses to filter on
+      name: destination_ext
+      in: query
+    Direction:
+      description: |
+        Direction of a list of resources, which goes hand in hand with
+        `orderBy`.
+      in: query
+      name: direction
+      required: false
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+        default: desc
+    EndDate:
+      name: endDate
+      in: query
+      schema:
+        type: string
+      description: |
+        End a list of resources before the specified value exclusively, which
+        goes hand in hand with `orderBy` and `direction`.
+      required: true
+    Hash:
+      in: query
+      name: hash
+      required: false
+      schema:
+        type: string
+      description: Hash of the resource
+    Limit:
+      in: query
+      name: limit
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 1
+        maximum: 100
+        default: 50
+      description: Limit is the upper limit of entries to return.
+    OrderBy:
+      in: query
+      name: orderBy
+      required: true
+      schema:
+        type: string
+        default: id
+      description: Order a list of resources by the specified field.
+    StartDate:
+      name: startDate
+      in: query
+      schema:
+        type: string
+      description: |
+        Start a list of resources after the specified value exclusively, which
+        goes hand in hand with `orderBy` and `direction`.
+      required: true
+    TransactionIDs:
+      name: transactionIDs
+      in: query
+      schema:
+        type: array
+        items:
+          type: integer
+          format: int64
+    UserID:
+      name: userID
+      in: path
+      required: true
+      description: ID of the user targeted by the request
+      schema:
+        type: integer
+        format: int64
+  schemas:
+    Account:
+      type: object
+      required:
+        - metadata
+        - config
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/AccountConfig"
+        status:
+          $ref: "#/components/schemas/AccountStatus"
+    BlockchainSpec:
+      description: Blockchain-specific transaction specification
+      properties:
+        Bitcoin:
+          $ref: "#/components/schemas/BitcoinSpec"
+        evm:
+          $ref: "#/components/schemas/EVMSpec"
+        solana:
+          $ref: "#/components/schemas/SolanaSpec"
+        substrate:
+          $ref: "#/components/schemas/SubstrateSpec"
+      type: object
+    EVMSpec:
+      description: EVM transaction specification
+      properties:
+        Gas:
+          description: Gas limit for the transaction
+          type: string
+          example: "21000"
+        MaxFeePerGas:
+          description: Maximum total fee per gas in Wei
+          type: string
+          example: "20000000000"
+        MaxPriorityFeePerGas:
+          description: Maximum priority fee per gas in Wei
+          type: string
+          example: "2000000000"
+        Nonce:
+          description: Transaction nonce
+          type: string
+      type: object
+      example:
+        Gas: "21000"
+        MaxFeePerGas: "20000000000"
+        MaxPriorityFeePerGas: "2000000000"
+    BitcoinSpec:
+      description: Bitcoin transaction specification
+      properties:
+        FeePerVByte:
+          description: Fee per vByte in Satoshi
+          type: integer
+          example: 10
+      type: object
+      example:
+        FeePerVByte: 10
+    SolanaSpec:
+      description: Solana transaction specification
+      properties:
+        PriorityFee:
+          description: Priority fee per Compute Unit in micro-lamports
+          format: int64
+          minimum: 0
+          type: integer
+          example: 1000
+      type: object
+      example:
+        PriorityFee: 1000
+    SubstrateSpec:
+      description: Substrate transaction specification
+      properties:
+        Tip:
+          description: Tip in Plank
+          type: string
+          example: "1000000000000"
+      type: object
+      example:
+        Tip: "1000000000000"
+    AccountAsset:
+      type: object
+      properties:
+        asset:
+          $ref: "#/components/schemas/Asset"
+        addresses:
+          type: array
+          items:
+            $ref: "#/components/schemas/Address"
+        balance:
+          $ref: "#/components/schemas/Balance"
+        erc20:
+          $ref: "#/components/schemas/ERC20"
+      required:
+        - asset
+        - addresses
+        - balance
+    AccountConfig:
+      type: object
+      required:
+        - isCold
+        - isActive
+      properties:
+        isCold:
+          type: boolean
+        isActive:
+          type: boolean
+        assets:
+          description: only active AccountAssets are shown
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountAsset"
+    AccountList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/Account"
+        more:
+          $ref: "#/components/schemas/More"
+      required:
+        - list
+        - more
+    AccountPatch:
+      type: object
+      required:
+        - isActive
+      properties:
+        isActive:
+          type: boolean
+    AccountConfigPost:
+      type: object
+      required:
+        - isCold
+        - isActive
+      properties:
+        isCold:
+          type: boolean
+        isActive:
+          type: boolean
+    AddAssetToAccountPost:
+      type: object
+      required:
+        - assetID
+      properties:
+        assetID:
+          description: ID of the existing asset to add to the account
+          type: integer
+          format: int64
+    AssetPost:
+      type: object
+      required:
+        - protocol
+        - network
+        - contractAddress
+      properties:
+        protocol:
+          type: string
+          description: The blockchain protocol (e.g., "ethereum", "polygon")
+        network:
+          type: string
+          description: The network name (e.g., "mainnet", "testnet")
+        contractAddress:
+          type: string
+          description: The ERC20 contract address
+    AccountPost:
+      type: object
+      required:
+        - name
+        - config
+      properties:
+        name:
+          $ref: "#/components/schemas/Name"
+        config:
+          $ref: "#/components/schemas/AccountConfigPost"
+    AccountStatus:
+      type: object
+      required:
+        - balance
+        - status
+      properties:
+        asyncOperationID:
+          $ref: "#/components/schemas/AsyncOperationID"
+        balance:
+          $ref: "#/components/schemas/Balance"
+        status:
+          type: string
+          enum:
+            - accountCreationFailure
+            - accountCreationInProgress
+            - accountCreationSuccess
+    Address:
+      type: object
+      required:
+        - metadata
+        - config
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/AddressConfig"
+        status:
+          $ref: "#/components/schemas/AddressStatus"
+    ToAddressAmount:
+      description: Destination address for a transaction
+      type: object
+      required:
+        - address
+      properties:
+        address:
+          type: string
+          example: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
+        accountID:
+          type: integer
+          format: int64
+          example: 12345
+        amount:
+          type: string
+          example: "1000000000000000000"
+        calldata:
+          type: string
+          description: Smart contract calldata for contract transfers
+          example: "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6000000000000000000000000000000000000000000000000000000000000000a"
+    FromAddressAmount:
+      description: Source address and amount for a transaction
+      type: object
+      required:
+        - address
+        - amount
+      properties:
+        address:
+          type: string
+          example: "0x8ba1f109551bD432803012645Hac136c"
+        accountID:
+          type: integer
+          format: int64
+          example: 12345
+        amount:
+          type: string
+          example: "1000000000000000000"
+    AddressAmount:
+      description: Address and crypto amount in a transaction (legacy type for non-transfer contexts)
+      type: object
+      required:
+        - address
+        - amount
+        - unit
+      properties:
+        address:
+          type: string
+        accountID:
+          type: integer
+          format: int64
+        amount:
+          type: string
+        unit:
+          type: string
+          example: BTC
+    AddressConfig:
+      type: object
+      required:
+        - accountID
+        - protocol
+        - network
+        - tokens
+      properties:
+        accountID:
+          type: integer
+          format: int64
+        protocol:
+          type: string
+        network:
+          type: string
+        address:
+          type: string
+        tokens:
+          type: array
+          items:
+            $ref: "#/components/schemas/AddressToken"
+        walletConnections:
+          $ref: "#/components/schemas/WalletConnections"
+    AddressList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/Address"
+        more:
+          $ref: "#/components/schemas/More"
+      required:
+        - list
+        - more
+    AddressPatch:
+      type: object
+      properties:
+        token:
+          $ref: "#/components/schemas/AddressToken"
+        name:
+          type: string
+        dappURIToDisconnectFrom:
+          description: dApp URI to disconnect wallet from
+          type: string
+          example: https://app.uniswap.org
+        walletConnectionPairingURI:
+          description: only used in pairing, not persisted
+          type: string
+          example: wc:YOUR_CONNECTION_ID@2?expiryTimestamp=TIMESTAMP&relay-protocol=irn&symKey=YOUR_SYMMETRIC_KEY
+    AddressPost:
+      type: object
+      required:
+        - name
+        - config
+      properties:
+        name:
+          type: string
+        config:
+          $ref: "#/components/schemas/AddressConfig"
+    AddressStatus:
+      type: object
+      properties:
+        asyncOperationID:
+          $ref: "#/components/schemas/AsyncOperationID"
+    Asset:
+      type: object
+      required:
+        - metadata
+        - config
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/AssetConfig"
+        status:
+          $ref: "#/components/schemas/AssetStatus"
+    AddressToken:
+      type: object
+      required:
+        - isActive
+        - symbol
+      properties:
+        isActive:
+          type: boolean
+        symbol:
+          type: string
+    AssetConfig:
+      type: object
+      required:
+        - network
+        - protocol
+      properties:
+        contractAddress:
+          type: string
+        exchangeRate:
+          $ref: "#/components/schemas/ExchangeRate"
+        network:
+          $ref: "#/components/schemas/Network"
+        protocol:
+          $ref: "#/components/schemas/Protocol"
+        symbol:
+          type: string
+    AssetList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/Asset"
+        more:
+          $ref: "#/components/schemas/More"
+      required:
+        - list
+        - more
+    AssetStatus:
+      type: object
+      required:
+        - balance
+        - isWalletConnectable
+        - status
+      properties:
+        asyncOperationID:
+          $ref: "#/components/schemas/AsyncOperationID"
+        balance:
+          $ref: "#/components/schemas/Balance"
+        isWalletConnectable:
+          type: boolean
+        status:
+          type: string
+          enum:
+            - assetCreationSuccess
+          description: Status of the asset creation process
+    AsyncOperationID:
+      description: |
+        ID of an asynchronous operation for which the confirmation of the
+        operation initiator and/or the approvals of the approvers might be
+        needed. It's ephemeral and deleted when such an operation reaches its
+        final state. An API resource might relate to different async operation
+        IDs in its life cycle.
+      type: integer
+      format: int64
+    MPAAsyncOperationID:
+      description: |
+        MPA Async Operation ID of the asynchronous operation for which the confirmation of the
+        operation initiator and/or the approvals of the approvers might be
+        needed.
+      type: string
+    AutomatedApprover:
+      type: object
+      required:
+        - metadata
+        - config
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/AutomatedApproverConfig"
+        status:
+          $ref: "#/components/schemas/AutomatedApproverStatus"
+    AutomatedApproverConfig:
+      type: object
+      properties:
+        publicKey:
+          type: string
+        state:
+          $ref: "#/components/schemas/UserState"
+    AutomatedApproverCreateParams:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    AutomatedApproverList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/AutomatedApprover"
+        more:
+          $ref: "#/components/schemas/More"
+      required:
+        - list
+        - more
+    AutomatedApproverPatchParams:
+      type: object
+      required:
+        - publicKey
+      properties:
+        publicKey:
+          type: string
+    AutomatedApproverStatus:
+      type: object
+      properties:
+        asyncOperationID:
+          $ref: "#/components/schemas/AsyncOperationID"
+    Balance:
+      type: object
+      properties:
+        crypto:
+          $ref: "#/components/schemas/BalanceCryptoValue"
+        usd:
+          $ref: "#/components/schemas/BalanceValue"
+    BalanceValue:
+      type: object
+      properties:
+        available:
+          type: string
+        onChain:
+          type: string
+      required:
+        - available
+        - onChain
+    BalanceCryptoValue:
+      type: object
+      properties:
+        value:
+          $ref: "#/components/schemas/BalanceValue"
+        unit:
+          type: string
+      required:
+        - value
+        - unit
+    Batch:
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/BatchConfig"
+        status:
+          $ref: "#/components/schemas/BatchStatus"
+      required:
+        - metadata
+        - config
+        - status
+    BatchConfig:
+      properties:
+        transactionIDs:
+          items:
+            type: integer
+            format: int64
+          type: array
+    BatchList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/Batch"
+        more:
+          $ref: "#/components/schemas/More"
+      required:
+        - list
+        - more
+    BatchPatch:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+    BatchStatus:
+      type: object
+      properties:
+        status:
+          type: string
+        requiredSignatureCount:
+          type: integer
+          format: int64
+        currentSignatureCount:
+          type: integer
+          format: int64
+      required:
+        - status
+        - requiredSignatureCount
+        - currentSignatureCount
+    Config:
+      type: object
+      required:
+        - appConfigLink
+        - appStoreLink
+        - feature
+        - frozen
+        - instanceName
+        - masterKeyBackupPerformed
+        - mode
+        - muixLicenseKey
+        - oauthAudience
+        - oauthClientId
+        - oauthDomain
+        - testNet
+        - version
+      properties:
+        appConfigLink:
+          type: string
+        appStoreLink:
+          type: string
+        feature:
+          $ref: "#/components/schemas/Feature"
+        frozen:
+          type: boolean
+        instanceName:
+          type: string
+        masterKeyBackupPerformed:
+          type: boolean
+        mode:
+          type: string
+          enum:
+            - on-prem
+            - on-cloud
+        muixLicenseKey:
+          type: string
+        oauthAudience:
+          type: string
+        oauthClientId:
+          type: string
+        oauthDomain:
+          type: string
+        selectableValidatorAssets:
+          type: array
+          items:
+            type: string
+        testNet:
+          type: boolean
+        version:
+          type: string
+    Feature:
+      required:
+        - StakeEth
+      properties:
+        BlockExplorer:
+          type: boolean
+        ColdStorage:
+          type: boolean
+        DevTools:
+          type: boolean
+        ERC20TransferRestriction:
+          type: boolean
+        EnhancedAudits:
+          type: boolean
+        StakeEth:
+          type: boolean
+        TxnRiskAssessment:
+          type: boolean
+        HideInstitutionalFeatures:
+          type: boolean
+        OmniBus:
+          type: boolean
+    Dapp:
+      description: decentralized application
+      type: object
+      properties:
+        name:
+          description: |
+            After pairing, the dapp's name will be revealed in the session
+            proposal from the dapp.
+          type: string
+        url:
+          description: |
+            After pairing, the dapp's URL will be revealed in the session
+            proposal from the dapp.
+          type: string
+          example: https://app.uniswap.org
+        iconURL:
+          description: |
+            After pairing, the dapp's icon URL will be revealed in the session
+            proposal from the dapp.
+          type: string
+          example: https://app.uniswap.org/favicon.png
+      required:
+        - url
+    DestinationType:
+      description: empty string is acceptable if unrestricted in this way
+      enum:
+        - external
+        - internal
+        - ""
+      x-enum-varnames:
+        - external
+        - internal
+        - all
+      type: string
+    ERC20:
+      type: object
+      required:
+        - transferRestrictionStandards
+      properties:
+        transferRestrictionStandards:
+          type: array
+          items:
+            $ref: "#/components/schemas/TransferRestrictionStandard"
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+        message:
+          description: If need be, it contains `ErrorMessage`
+          type: string
+    ErrorMessage:
+      type: string
+      enum:
+        - WalletConnect link expired
+        - invalid content
+        - duplicate signed transactions
+    Event:
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/EventConfig"
+        status:
+          $ref: "#/components/schemas/EventStatus"
+      required:
+        - metadata
+        - config
+    EventConfig:
+      type: object
+    EventList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/Event"
+        more:
+          $ref: "#/components/schemas/More"
+      required:
+        - list
+        - more
+    EventStatus:
+      properties:
+        apiResourceID:
+          type: integer
+          format: int64
+        apiResourceType:
+          type: string
+          enum:
+            - account
+            - address
+            - asset
+            - group
+            - reward
+            - stake
+            - staking-withdrawal
+            - transaction
+            - transfer
+            - user
+        topic:
+          description: |
+            Topic of the event, e.g. `address_connection_success`
+          type: string
+      required:
+        - apiResourceID
+        - apiResourceType
+        - topic
+    ExchangeRate:
+      type: object
+      properties:
+        base:
+          type: string
+        quote:
+          type: string
+        value:
+          type: string
+        range:
+          $ref: "#/components/schemas/Range"
+      required:
+        - base
+        - quote
+        - value
+    FeeRecipient:
+      type: string
+      description: Ethereum specific - the address nominated by a beacon chain
+    Group:
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/GroupConfig"
+        status:
+          $ref: "#/components/schemas/GroupStatus"
+      required:
+        - metadata
+        - config
+    GroupConfig:
+      properties:
+        users:
+          items:
+            $ref: "#/components/schemas/User"
+          type: array
+    GroupList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/Group"
+        more:
+          $ref: "#/components/schemas/More"
+      required:
+        - list
+        - more
+    GroupStatus:
+      type: object
+      properties:
+        asyncOperationID:
+          $ref: "#/components/schemas/AsyncOperationID"
+    GroupPost:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    Metadata:
+      required:
+        - creatorID
+        - creatorEmail
+        - createdAt
+        - updatedAt
+        - name
+        - id
+      properties:
+        createdAt:
+          type: string
+          format: time-date
+        creatorID:
+          type: integer
+          format: int64
+        creatorEmail:
+          type: string
+        id:
+          type: integer
+          format: int64
+        name:
+          $ref: "#/components/schemas/Name"
+        updatedAt:
+          type: string
+          format: time-date
+    OperationState:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          description: | 
+            Status of the MPA operation. Terminal states are: "rej", "err", "fin", "can".
+        errorDetails:
+          $ref: "#/components/schemas/ErrorDetails"
+          description: |
+            Present only when status is "err". Contains details about the error
+            that occurred.
+        outputs:
+          $ref: "#/components/schemas/OperationOutput"
+          description: |
+            Present only when status is "fin". Contains the operation results.
+    ErrorDetails:
+      type: object
+      required:
+        - errorCode
+      properties:
+        errorCode:
+          type: string
+          description: Error code from the MPA
+        properties:
+          type: object
+          additionalProperties: true
+          description: Additional error properties (deprecated)
+        timestamp:
+          type: string
+          format: date-time
+          nullable: true
+          description: Time when the error occurred
+    OperationOutput:
+      type: object
+      description: |
+        Output of a completed MPA operation. Only the applicable fields for the
+        operation type will be populated.
+      properties:
+        address:
+          type: string
+          nullable: true
+          description: Generated address (for address generation operations)
+        addressIndex:
+          type: integer
+          format: int64
+          nullable: true
+          description: Index of the generated address
+        transaction:
+          $ref: "#/components/schemas/MPATransaction"
+          nullable: true
+          description: Transaction data (for transfer operations)
+    MPATransaction:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          type: string
+          description: Transaction ID
+        fee:
+          type: string
+          description: Transaction fee (as string to handle large integers)
+        senderAddresses:
+          type: array
+          items:
+            type: string
+          description: Addresses that sent the transaction
+        blockchainTxn:
+          type: string
+          format: byte
+          description: Raw blockchain transaction bytes
+        signedTransaction:
+          type: string
+          description: Signed transaction in blockchain-specific format
+    More:
+      type: boolean
+      description: |
+        It's used in listing resources, meaning whether or not there're more
+        resources to be listed.
+    Name:
+      description: human-readable text for the resource
+      type: string
+    Network:
+      enum:
+        - amoy
+        - holesky
+        - mainnet
+        - sepolia
+        - testnet
+        - testnet4
+        - westend
+        - lower-qa
+        - higher-prod
+        - hoodi
+        - devnet
+      type: string
+      description: Blockchain network name, provided by configuration (e.g., "mainnet", "testnet", "sepolia").
+    OperationType:
+      enum:
+        - addERC20
+        - getAddress
+        - backupMasterKey
+        - createMasterKey
+        - createAccount
+        - transfer
+        - stake
+        - signRawTransaction
+        - unstake
+        - registerUser
+        - deleteUser
+        - resetUser
+        - updateGroup
+        - updatePolicySet
+        - updateRates
+        - freeze
+        - attachMasterKey
+        - createBatch
+        - finishCurrentBatch
+        - deleteCurrentBatch
+        - callContract
+        - deployContract
+        - genericSigning
+        - setUserPublicKey
+        - registerBlockchainNetwork
+        - unregisterBlockchainNetwork
+        - fundSubAddresses
+        - consolidateFunds
+        - ""
+      x-enum-varnames:
+        - addERC20
+        - getAddress
+        - backupMasterKey
+        - createMasterKey
+        - createAccount
+        - transfer
+        - stake
+        - signRawTransaction
+        - unstake
+        - registerUser
+        - deleteUser
+        - resetUser
+        - updateGroup
+        - updatePolicySet
+        - updateRates
+        - freeze
+        - attachMasterKey
+        - createBatch
+        - finishCurrentBatch
+        - deleteCurrentBatch
+        - callContract
+        - deployContract
+        - genericSigning
+        - setUserPublicKey
+        - registerBlockchainNetwork
+        - unregisterBlockchainNetwork
+        - fundSubAddresses
+        - consolidateFunds
+        - anyOperation
+      type: string
+    Policy:
+      description: |
+        Policy represents the policy for a specific operation, which includes an
+        array of policy entries in its config. Users have to replace the whole
+        array of policy entries when they want to change it.
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/PolicyConfig"
+        status:
+          $ref: "#/components/schemas/PolicyStatus"
+      required:
+        - metadata
+        - config
+    PolicyApproverExpression:
+      properties:
+        groups:
+          items:
+            type: string
+          type: array
+        op:
+          $ref: "#/components/schemas/PolicyExpressionOperator"
+        requiredCount:
+          format: int32
+          type: integer
+        subExpressions:
+          description: only one level of recursion
+          items:
+            $ref: "#/components/schemas/PolicyApproverExpression"
+          type: array
+      required:
+        - groups
+        - op
+        - requiredCount
+    PolicyEntry:
+      properties:
+        amountCurrency:
+          type: string
+        approverExpression:
+          $ref: "#/components/schemas/PolicyApproverExpression"
+        assets:
+          items:
+            type: string
+          type: array
+        contractAddress:
+          type: string
+        destinations:
+          items:
+            type: string
+          type: array
+        destinationType:
+          $ref: "#/components/schemas/DestinationType"
+        feeRecipient:
+          type: string
+        feeRecipientType:
+          $ref: "#/components/schemas/DestinationType"
+        minAmount:
+          type: string
+        policyUpdateOpType:
+          $ref: "#/components/schemas/OperationType"
+        sourceAccountNames:
+          items:
+            type: string
+          type: array
+        targetGroup:
+          type: string
+        triggerGroup:
+          type: string
+        txCurrencies:
+          items:
+            type: string
+          type: array
+        withdrawalAddress:
+          type: string
+        withdrawalAddressType:
+          $ref: "#/components/schemas/DestinationType"
+    PolicyExpressionOperator:
+      description: The underlying engine also supports the `or` operator, which is not supported by the wallet for now.
+      enum:
+        - and
+        - leaf
+        - allow
+        - block
+      type: string
+    PolicyConfig:
+      properties:
+        entries:
+          items:
+            $ref: "#/components/schemas/PolicyEntry"
+          type: array
+        skipConfirmations:
+          type: boolean
+      required:
+        - entries
+        - skipConfirmations
+    PolicyList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/Policy"
+        more:
+          $ref: "#/components/schemas/More"
+      required:
+        - list
+        - more
+    PolicyStatus:
+      type: object
+      properties:
+        asyncOperationID:
+          $ref: "#/components/schemas/AsyncOperationID"
+    Protocol:
+      enum:
+        - besu
+        - bitcoin
+        - ethereum
+        - polkadot
+        - polygon
+        - solana
+        - base
+        - canton
+      type: string
+      description: Blockchain protocol name, provided by configuration (e.g., "ethereum", "bitcoin", "solana").
+    Range:
+      properties:
+        max:
+          type: string
+        min:
+          type: string
+      required:
+        - max
+        - min
+    Reward:
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/RewardConfig"
+        status:
+          $ref: "#/components/schemas/RewardStatus"
+      required:
+        - metadata
+        - config
+    RewardConfig:
+      properties:
+        asset:
+          $ref: "#/components/schemas/Asset"
+        to:
+          $ref: "#/components/schemas/AddressAmount"
+      required:
+        - asset
+        - to
+    RewardStatus: {}
+    Role:
+      type: string
+      enum:
+        - Admin
+        - MarketOps
+        - Server
+        - Viewer
+        - AutomatedApprover
+    TransferScreenConfig:
+      description: >
+        config for creating a transfer screen. needs to correspond to:
+        pkg/compliance/chainalysis logic.
+      properties:
+        assetID:
+          type: integer
+          format: int64
+        to:
+          $ref: "#/components/schemas/AddressAmount"
+      required:
+        - assetID
+        - to
+    TransferScreenStatus:
+      description: >
+        status of transfer screen. needs to correspond to:
+        pkg/compliance/chainalysis logic.
+      properties:
+        alertLevel:
+          type: string
+        categoryId:
+          type: integer
+          minimum: 1
+          maximum: 1000
+        service:
+          type: string
+      required:
+        - alertLevel
+        - category
+        - service
+    Stake:
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/StakeConfig"
+        status:
+          $ref: "#/components/schemas/StakeStatus"
+      required:
+        - metadata
+        - config
+    StakeConfig:
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0
+        asset:
+          $ref: "#/components/schemas/Asset"
+        feeRecipient:
+          $ref: "#/components/schemas/FeeRecipient"
+        fromAccount:
+          $ref: "#/components/schemas/Account"
+        withdrawalAddress:
+          $ref: "#/components/schemas/WithdrawalAddress"
+      required:
+        - amount
+        - assetID
+        - feeRecipient
+        - fromAccountID
+        - withdrawalAddress
+    StakeParams:
+      properties:
+        amount:
+          type: number
+          format: double
+          minimum: 0
+          description: the staking amount in native denomination. For example 32 ETH
+        asset:
+          type: integer
+          format: int64
+          description: id of the staking asset
+        feeRecipient:
+          $ref: "#/components/schemas/FeeRecipient"
+        fromAccount:
+          type: integer
+          format: int64
+          description: id of the account where the staking fund comes from.
+        withdrawalAddress:
+          $ref: "#/components/schemas/WithdrawalAddress"
+        reference:
+          type: string
+          description: optional reference of the stake
+      required:
+        - amount
+        - asset
+        - feeRecipient
+        - fromAccount
+        - withdrawalAddress
+    StakeStatus:
+      properties:
+        hash:
+          type: string
+        validators:
+          type: array
+          items:
+            $ref: "#/components/schemas/Validator"
+        status:
+          type: string
+      required:
+        - status
+    StakingWithdrawal:
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/StakingWithdrawalConfig"
+        status:
+          $ref: "#/components/schemas/StakingWithdrawalStatus"
+      required:
+        - metadata
+        - config
+    StakingWithdrawalConfig:
+      properties:
+        validator:
+          $ref: "#/components/schemas/Validator"
+      required:
+        - validator
+    StakingWithdrawalStatus:
+      type: string
+    StakingWithdrawalParams:
+      properties:
+        validatorAddress:
+          type: string
+      required:
+        - validatorAddress
+    TransferRestrictionStandard:
+      type: string
+      enum:
+        - ERC-1404
+        - ERC-3643
+    Transaction:
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/TransactionConfig"
+        status:
+          $ref: "#/components/schemas/TransactionStatus"
+      required:
+        - metadata
+        - config
+    TransactionConfig:
+      type: object
+      required:
+        - type
+      properties:
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        reward:
+          $ref: "#/components/schemas/RewardConfig"
+        stake:
+          $ref: "#/components/schemas/StakeConfig"
+        stakingWithdrawal:
+          $ref: "#/components/schemas/StakingWithdrawalConfig"
+        transfer:
+          $ref: "#/components/schemas/TransferConfig"
+    TransactionID:
+      type: integer
+      format: int64
+      description: Unique identifier for a transaction
+    TransactionList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        more:
+          $ref: "#/components/schemas/More"
+      required:
+        - list
+        - more
+    TransactionStatus:
+      oneOf:
+        - $ref: "#/components/schemas/RewardStatus"
+        - $ref: "#/components/schemas/StakeStatus"
+        - $ref: "#/components/schemas/TransferStatus"
+        - $ref: "#/components/schemas/StakingWithdrawalStatus"
+    TransactionType:
+      type: string
+      enum:
+        - reward
+        - stake
+        - transfer
+        - staking-withdrawal
+    Transfer:
+      required:
+        - metadata
+        - config
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/TransferConfig"
+        status:
+          $ref: "#/components/schemas/TransferStatus"
+    TransferConfig:
+      type: object
+      required:
+        - assetID
+        - toAddressAmountArray
+        - fromAddressAmountArray
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - transfer
+            - contract
+          default: transfer
+          example: "transfer"
+        assetID:
+          type: integer
+          format: int64
+          example: 1
+        toAddressAmountArray:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToAddressAmount"
+          example:
+            - address: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
+        fromAddressAmountArray:
+          type: array
+          items:
+            $ref: "#/components/schemas/FromAddressAmount"
+          example:
+            - address: "0x8ba1f109551bD432803012645Hac136c"
+              amount: "1000000000000000000"
+        feePriority:
+          type: string
+          enum:
+            - Custom
+            - High
+            - Low
+            - Medium
+          default: Medium
+        blockchainSpec:
+          $ref: "#/components/schemas/BlockchainSpec"
+        riskAssessmentProof:
+          type: string
+          example: "risk_assessment_proof_12345"
+        reference:
+          type: string
+          default: "no reference provided"
+          example: "Transfer to exchange for trading"
+    TransferPost:
+      type: object
+      required:
+        - assetID
+        - toAddressAmountArray
+        - fromAddressAmountArray
+        - type
+      properties:
+        type:
+          type: string
+          enum:
+            - transfer
+            - contract
+          default: transfer
+          example: "transfer"
+        assetID:
+          type: integer
+          format: int64
+          example: 12
+        toAddressAmountArray:
+          type: array
+          items:
+            $ref: "#/components/schemas/ToAddressAmount"
+          example:
+            - address: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
+        fromAddressAmountArray:
+          type: array
+          items:
+            $ref: "#/components/schemas/FromAddressAmount"
+          example:
+            - address: "0x8ba1f109551bD432803012645Hac136c"
+              amount: "1000000000000000000"
+        feePriority:
+          type: string
+          enum:
+            - Custom
+            - High
+            - Low
+            - Medium
+          default: "Medium"
+        blockchainSpec:
+          $ref: "#/components/schemas/BlockchainSpec"
+        riskAssessmentProof:
+          type: string
+          example: "risk_assessment_proof_12345"
+        reference:
+          type: string
+          default: ""
+          example: "ref: #1432"
+    RawTransferPost:
+      type: object
+      required:
+        - protocol
+        - network
+        - symbol
+        - rawTransaction
+        - fromAddress
+      properties:
+        fromAccountID:
+          type: integer
+          format: int64
+          example: 12345
+        fromAddress:
+          type: string
+          example: "0x8ba1f109551bD432803012645Hac136c"
+          description: The address of the account from which the transfer is being made.
+        network:
+          $ref: "#/components/schemas/Network"
+        protocol:
+          $ref: "#/components/schemas/Protocol"
+        symbol:
+          type: string
+          example: "ETH"
+        rawTransaction:
+          type: string
+          example: "0x..."
+          description: The unsigned transaction (hex-encoded)
+    RawTransferResponse:
+      type: object
+      required:
+        - asyncOperationID
+      properties:
+        asyncOperationID:
+          $ref: "#/components/schemas/MPAAsyncOperationID"
+    TransferStatus:
+      type: object
+      properties:
+        blockNumber:
+          type: integer
+          format: int64
+        txHash:
+          type: string
+        status:
+          type: string
+        fee:
+          description: The transaction fee in the native currency, e.g., BTC
+          type: string
+    TransferResponse:
+      required:
+        - ID
+      properties:
+        ID:
+          type: string
+    User:
+      type: object
+      required:
+        - metadata
+        - config
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/UserConfig"
+        status:
+          $ref: "#/components/schemas/UserStatus"
+    UserIDs:
+      type: array
+      items:
+        type: integer
+        format: int64
+    UserConfig:
+      type: object
+      required:
+        - role
+      properties:
+        email:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        state:
+          $ref: "#/components/schemas/UserState"
+    UserList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/User"
+        more:
+          $ref: "#/components/schemas/More"
+      required:
+        - list
+        - more
+    UserPost:
+      type: object
+      required:
+        - name
+        - config
+      properties:
+        name:
+          type: string
+        config:
+          $ref: "#/components/schemas/UserConfig"
+    UserState:
+      type: string
+      enum:
+        - active
+        - pending onboarding
+    UserStatus:
+      type: object
+      properties:
+        apiKey:
+          description: apiKey will only be populated once upon the creation of a `server` user.
+          type: string
+        asyncOperationID:
+          $ref: "#/components/schemas/AsyncOperationID"
+    Validator:
+      properties:
+        metadata:
+          $ref: "#/components/schemas/Metadata"
+        config:
+          $ref: "#/components/schemas/ValidatorConfig"
+        status:
+          $ref: "#/components/schemas/ValidatorStatus"
+      required:
+        - metadata
+        - config
+    ValidatorBalance:
+      type: object
+      properties:
+        amount:
+          type: string
+        amountFiat:
+          type: string
+        unit:
+          type: string
+      required:
+        - amount
+        - amountFiat
+        - unit
+    ValidatorConfig:
+      properties:
+        activationDate:
+          format: date-time
+          type: string
+        address:
+          type: string
+        asset:
+          $ref: "#/components/schemas/Asset"
+        index:
+          format: int64
+          type: integer
+    ValidatorList:
+      type: object
+      properties:
+        list:
+          type: array
+          items:
+            $ref: "#/components/schemas/Validator"
+        more:
+          $ref: "#/components/schemas/More"
+        summary:
+          $ref: "#/components/schemas/ValidatorListSummary"
+      required:
+        - list
+        - more
+        - summary
+    ValidatorListSummary:
+      type: object
+      properties:
+        missingExchangeRates:
+          type: array
+          items:
+            type: string
+        fiat:
+          $ref: "#/components/schemas/ValidatorListSummaryBalance"
+      required:
+        - fiat
+    ValidatorListSummaryBalance:
+      type: object
+      properties:
+        total:
+          type: string
+        staked:
+          type: string
+        pendingRewards:
+          type: string
+      required:
+        - total
+        - staked
+        - pendingRewards
+    ValidatorReward:
+      type: object
+      properties:
+        amount:
+          type: string
+        unit:
+          type: string
+      required:
+        - amount
+        - unit
+    ValidatorStatus:
+      properties:
+        annualPercentageYield:
+          type: number
+          format: double
+        currentBalance:
+          $ref: "#/components/schemas/ValidatorBalance"
+        status:
+          enum:
+            - Deposited
+            - Active
+            - Exited
+            - Exiting
+            - Pending
+            - Reserved
+            - Slashed
+            - Unknown
+            - Withdrawal
+            - WithdrawalRequested
+          type: string
+        totalRewards:
+          $ref: "#/components/schemas/ValidatorReward"
+    WalletConnection:
+      type: object
+      properties:
+        dapp:
+          $ref: "#/components/schemas/Dapp"
+        addressID:
+          type: integer
+          format: int64
+      required:
+        - dapp
+        - addressID
+    WalletConnections:
+      description: |
+        WalletConnections is an array of WalletConnect connections in descending
+        order of creation time.
+      type: array
+      items:
+        $ref: "#/components/schemas/WalletConnection"
+    WithdrawalAddress:
+      type: string
+      description: used to receive staking rewards and returned staked.
+  responses:
+    BadRequest:
+      description: The request was invalid, included validation errors, or cannot be served.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: The server understood the request but refuses to authorize it.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalServerError:
+      description: The server has encountered a situation it doesn't know how to handle.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: The requested resource could not be found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    ServiceUnavailable:
+      description: The server is not ready to handle requests.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: Authentication is required and has failed or has not been provided.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    UnexpectedError:
+      description: Unexpected error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: authorization
+      description: API key for authentication (no Bearer prefix required)
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+paths:
+  /api/v2/accounts:
+    get:
+      operationId: listAccounts
+      summary: List all accounts in wallet
+      description: Retrieve a list of all accounts in the wallet.
+      tags:
+        - Accounts
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+    post:
+      operationId: createAccount
+      summary: Create new account
+      description: Add a new account to the wallet.
+      tags:
+        - Accounts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            # Following schema is a duplicate of `Account`, but with the `assets` property no longer required
+            schema:
+              type: object
+              required:
+                - name
+                - config
+              properties:
+                name:
+                  $ref: "#/components/schemas/Name"
+                config:
+                  $ref: "#/components/schemas/AccountConfigPost"
+      responses:
+        "201":
+          description: Account created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/accounts/{accountID}:
+    get:
+      operationId: getAccount
+      summary: Get account by ID
+      description: Retrieve details of a specific account.
+      tags:
+        - Accounts
+      parameters:
+        - $ref: "#/components/parameters/AccountIDPath"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+    patch:
+      operationId: patchAccount
+      summary: Partially update an account
+      description: Set the active state of an account.
+      tags:
+        - Accounts
+      parameters:
+        - $ref: "#/components/parameters/AccountIDPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AccountPatch"
+      responses:
+        "200":
+          description: Account updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/accounts/{accountID}/validators:
+    get:
+      operationId: listAccountValidators
+      summary: List account's validators
+      description: Returns a list of staking validators of the account.
+      tags:
+        - Accounts
+        - Staking
+      parameters:
+        - $ref: "#/components/parameters/AccountIDPath"
+        - in: query
+          name: cache
+          description: Whether to use cached data. Default to true if not set.
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidatorList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/addresses:
+    get:
+      operationId: listAddresses
+      summary: List addresses
+      description: Retrieve a list of addresses with optional filtering by account and asset.
+      parameters:
+        - $ref: "#/components/parameters/AccountIDQuery"
+        - $ref: "#/components/parameters/AssetIDQuery"
+      tags:
+        - Addresses
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddressList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+    post:
+      operationId: createAddress
+      summary: Create address
+      description: Create a new address for Bitcoin (only for Bitcoin).
+      tags:
+        - Addresses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddressPost"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/addresses/{addressID}:
+    get:
+      operationId: getAddress
+      summary: Get address by ID
+      description: Retrieve details of a specific address.
+      tags:
+        - Addresses
+      parameters:
+        - $ref: "#/components/parameters/AddressID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    patch:
+      operationId: patchAddress
+      summary: Update address
+      description: Update address configuration including token settings and wallet connections.
+      tags:
+        - Addresses
+      parameters:
+        - $ref: "#/components/parameters/AddressID"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddressPatch"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Address"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/assets:
+    get:
+      operationId: listAssets
+      summary: List all assets in wallet
+      description: Retrieve a list of all assets in the wallet.
+      tags:
+        - Assets
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  list:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Asset"
+                  more:
+                    $ref: "#/components/schemas/More"
+                required:
+                  - list
+                  - more
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+    post:
+      operationId: createAsset
+      summary: Add asset to wallet
+      description: Add an ERC-20 token to the wallet.
+      tags:
+        - Assets
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetPost"
+      responses:
+        "201":
+          description: Asset created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/assets/{assetID}:
+    get:
+      operationId: getAsset
+      summary: Get asset by ID
+      description: Retrieve details of a specific asset.
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/components/parameters/AssetIDPath"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+    patch:
+      operationId: patchAsset
+      summary: Partially update an asset
+      description: Set the exchange rate of an asset.
+      tags:
+        - Assets
+      parameters:
+        - $ref: "#/components/parameters/AssetIDPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExchangeRate"
+      responses:
+        "200":
+          description: Asset updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/assets/{assetID}/validators:
+    get:
+      operationId: listAssetValidators
+      summary: List asset validators
+      description: Returns a list of staking validators of the asset.
+      tags:
+        - Assets
+        - Staking
+      parameters:
+        - $ref: "#/components/parameters/AssetIDPath"
+        - in: query
+          name: cache
+          description: Whether to use cached data. Default to true if not set.
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ValidatorList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/accounts/{accountID}/assets:
+    post:
+      operationId: addAssetToAccount
+      summary: Add existing asset to account
+      description: Add an existing asset to an account by asset ID. The asset must already exist in the wallet.
+      tags:
+        - Accounts
+        - Assets
+      parameters:
+        - $ref: "#/components/parameters/AccountIDPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddAssetToAccountPost"
+      responses:
+        "201":
+          description: Asset added to account successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountAsset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Asset already exists in account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/audit-logs/download:
+    get:
+      operationId: listAuditLogsByDownload
+      summary: Download audit logs
+      description: Download the list of audit-logs as a zip file.
+      tags:
+        - Audit Logs
+      parameters:
+        - name: start_date
+          description: Start date parameter for audit logs export
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: end_date
+          description: End date parameter for audit logs export
+          in: query
+          required: true
+          schema:
+            type: string
+        - name: user_filter
+          description: Boolean parameter for specifying whether to filter audit logs down to user events
+          in: query
+          schema:
+            type: boolean
+        - name: policy_filter
+          description: Boolean parameter for specifying whether to filter audit logs down to policy events
+          in: query
+          schema:
+            type: boolean
+        - name: staking_filter
+          description: Boolean parameter for specifying whether to filter audit logs down to staking events
+          in: query
+          schema:
+            type: boolean
+        - name: fee_filter
+          description: Boolean parameter for specifying whether to filter audit logs down to gas/fee-burning events
+          in: query
+          schema:
+            type: boolean
+        - name: smart_contract_filter
+          description: Boolean parameter for specifying whether to filter audit logs down to smart contract events
+          in: query
+          schema:
+            type: boolean
+        - name: columns
+          description: Comma-separated list of columns you want to appear in the final output .csv
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                example: attachment; filename="audit-logs.zip"
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v2/batches:
+    get:
+      operationId: listBatches
+      summary: List batches
+      description: Retrieve a list of transaction batches with optional filtering for in-progress batches.
+      parameters:
+        - name: inProgress
+          in: query
+          description: |
+            Whether to include batches that are in progress, i.e not in the
+            final statuses - `finished` and `deleted`. Currently only return the
+            oldest batch to cater to FE.
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: Batches listed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  list:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Batch"
+                  more:
+                    $ref: "#/components/schemas/More"
+                required:
+                  - list
+                  - more
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Cold Wallet
+  /api/v2/batches/{batchID}:
+    parameters:
+      - description: Batch ID
+        in: path
+        name: batchID
+        required: true
+        schema:
+          format: int64
+          type: integer
+    get:
+      operationId: getBatch
+      summary: Get batch by ID
+      description: Retrieve details of a specific transaction batch.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Cold Wallet
+    delete:
+      operationId: deleteBatch
+      summary: Delete batch
+      description: Update the batch status to deleted. Once deleted, the batch cannot be recovered.
+      tags:
+        - Cold Wallet
+      responses:
+        "200":
+          description: Batch deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    patch:
+      operationId: patchBatch
+      summary: Update batch
+      description: Only the status can be updated and it can only be updated to created.
+      tags:
+        - Cold Wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchPatch"
+      responses:
+        "200":
+          description: Batch updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v2/batches/{batchID}/download:
+    description: Download the unsigned batch identified by batch ID.
+    parameters:
+      - description: Batch ID
+        in: path
+        name: batchID
+        required: true
+        schema:
+          format: int64
+          type: integer
+    get:
+      operationId: getColdBatchByDownload
+      summary: Download batch
+      description: Download the unsigned batch identified by batch ID for cold wallet signing.
+      tags:
+        - Cold Wallet
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  signature:
+                    type: string
+                  master_key_id:
+                    type: string
+                  encrypted_transaction_batch:
+                    type: string
+                required:
+                  - signature
+                  - master_key_id
+                  - encrypted_transaction_batch
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v2/batches/{batchID}/signed/upload:
+    description: |
+      Upload the signed version of the batch identified by batch ID. Once the
+      required count of signatures is reached, the batch will be finalized.
+    parameters:
+      - description: Batch ID
+        in: path
+        name: batchID
+        required: true
+        schema:
+          format: int64
+          type: integer
+    post:
+      operationId: postSignedColdBatchByUpload
+      summary: Upload signed batch
+      description: Upload the signed version of the batch identified by batch ID. Once the required count of signatures is reached, the batch will be finalized.
+      tags:
+        - Cold Wallet
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                signed_transaction_batch:
+                  format: binary
+                  type: string
+                  description: An array of signed transaction batches (by cold wallets)
+      responses:
+        "201":
+          description: Signed batch successfully uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v2/cold-pairing-messages/upload:
+    description: The endpoint only accepts HTTP POST. Theoretically there might be multiple cold wallets in the system.
+    post:
+      operationId: createColdPairingMessageByUpload
+      summary: Upload cold pairing message
+      description: Upload the cold wallet's pairing message after the cold wallet has received the pairing message from the hot wallet.
+      tags:
+        - Cold Wallet
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                cold_pairing_message:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Cold pairing message successfully uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Batch"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v2/config:
+    get:
+      operationId: getConfig
+      summary: Retrieve config for wallet
+      description: Retrieve the application configuration for the wallet.
+      tags:
+        - Config
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+    patch:
+      operationId: patchConfig
+      summary: Partially update the wallet config
+      description: frozen or not, compliance or other dynamic behavior which should be as minimal as possible; whether or not the event streaming service is active
+      tags:
+        - Config
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                frozen:
+                  type: boolean
+      responses:
+        "200":
+          description: Config updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Config"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/events:
+    description: Events are interesting status changes of API resources.
+    get:
+      operationId: listEvents
+      summary: List events
+      description: Retrieve a list of events representing status changes of API resources.
+      tags:
+        - Events
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  list:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Event"
+                  more:
+                    $ref: "#/components/schemas/More"
+                required:
+                  - list
+                  - more
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v2/events/ws-receive:
+    description: |
+      This path should only has one verb - GET. The details of this path can be
+      found in `asyncapi.yaml` next to this file.
+    get:
+      operationId: wsReceiveEvents
+      summary: WebSocket events
+      description: Establish a WebSocket connection to receive real-time events. See asyncapi.yaml for detailed specifications.
+      tags:
+        - Events
+      responses:
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v2/groups:
+    get:
+      operationId: listGroups
+      summary: List groups
+      description: Retrieve a list of all groups in the wallet.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  list:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Group"
+                  more:
+                    $ref: "#/components/schemas/More"
+                required:
+                  - list
+                  - more
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Groups
+    post:
+      operationId: createGroup
+      summary: Create group
+      description: Create a new group in the wallet.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GroupPost"
+        required: true
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Groups
+  /api/v2/groups/{groupID}:
+    parameters:
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        schema:
+          format: int64
+          type: integer
+    get:
+      operationId: getGroup
+      summary: Get group by ID
+      description: Retrieve details of a specific group.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Groups
+  /api/v2/groups/{groupID}/users:
+    parameters:
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        schema:
+          format: int64
+          type: integer
+    post:
+      operationId: addUsersToGroup
+      summary: Add users to group
+      description: Add one or more users to a specific group.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - userIDs
+              properties:
+                userIDs:
+                  type: array
+                  items:
+                    type: integer
+                    format: int64
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Groups
+  /api/v2/groups/{groupID}/users/{userID}:
+    parameters:
+      - description: Group ID
+        in: path
+        name: groupID
+        required: true
+        schema:
+          format: int64
+          type: integer
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        schema:
+          format: int64
+          type: integer
+    delete:
+      operationId: deleteUserFromGroup
+      summary: Remove user from group
+      description: Remove a user from a specific group.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Group"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Groups
+  /api/v2/hot-pairing-message/download:
+    description: There's only one hot wallet in the system, hence the singular `hot-pairing-message`. The endpoint only accepts HTTP GET, hence `download` in the URL.
+    get:
+      operationId: getHotPairingMessageByDownload
+      summary: Download hot pairing message
+      description: Download the hot wallet's pairing message. This is the first step in pairing hot and cold wallets.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                format: binary
+                type: string
+          headers:
+            Content-Disposition:
+              schema:
+                example: attachment; filename="hot-pairing-message.zip"
+                type: string
+      tags:
+        - Cold Wallet
+  /api/v2/key-backups/download:
+    get:
+      operationId: listKeyBackupsByDownload
+      summary: Download key backups
+      description: Download key backup files as a binary stream.
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                format: binary
+                type: string
+          description: OK
+      tags:
+        - Key Backups
+  /api/v2/policies:
+    get:
+      operationId: listPolicies
+      summary: List policies
+      description: Retrieve a list of all policies in the wallet.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PolicyList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Policies
+  /api/v2/policies/{policyID}:
+    parameters:
+      - description: Policy ID for a particular async operation type
+        in: path
+        name: policyID
+        required: true
+        schema:
+          format: int64
+          type: integer
+    get:
+      operationId: getPolicy
+      summary: Get policy by ID
+      description: Retrieve details of a specific policy.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Policies
+    put:
+      operationId: updatePolicy
+      summary: Update policy
+      description: Replace the policy for a particular operation type.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PolicyConfig"
+        required: true
+      responses:
+        "202":
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Policy"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Policies
+  /api/v2/compliance/screen:
+    description: create a request with CA to screen a potential transaction against OFAC compliance.
+    post:
+      operationId: createTransferScreen
+      summary: Screen transaction for compliance
+      description: Create a request with CA to screen a potential transaction against OFAC compliance.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferScreenConfig"
+      responses:
+        "201":
+          description: transfer screen created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Compliance
+  /api/v2/stakes:
+    post:
+      operationId: createStake
+      summary: Create stake
+      description: Create a new staking transaction for validator staking.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StakeParams"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Stake"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Staking
+  /api/v2/transactions:
+    get:
+      operationId: listTransactions
+      summary: List transactions
+      description: Retrieve a list of transactions with comprehensive filtering options.
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      parameters:
+        - $ref: "#/components/parameters/AccountIDQuery"
+        - $ref: "#/components/parameters/AssetIDs"
+        - $ref: "#/components/parameters/CreatedAfter"
+        - $ref: "#/components/parameters/CreatedBefore"
+        - $ref: "#/components/parameters/Creator"
+        - $ref: "#/components/parameters/Direction"
+        - $ref: "#/components/parameters/EndDate"
+        - $ref: "#/components/parameters/Hash"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/OrderBy"
+        - $ref: "#/components/parameters/StartDate"
+        - $ref: "#/components/parameters/Page"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/SourceExt"
+        - $ref: "#/components/parameters/SourceAcc"
+        - $ref: "#/components/parameters/DestinationExt"
+        - $ref: "#/components/parameters/DestinationAcc"
+        - $ref: "#/components/parameters/TransactionIDs"
+        - name: fromAddresses
+          description: Set of the addresses of the sources of the transactions
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: toAddresses
+          description: Set of the addresses of the destinations of the transactions
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+        - name: fromAccounts
+          description: Set of the IDs of the source accounts of transactions
+          in: query
+          schema:
+            items:
+              type: integer
+              format: int64
+            type: array
+            example: [1, 2, 3]
+        - name: toAccounts
+          description: Set of the IDs of the destination accounts of transactions
+          in: query
+          schema:
+            type: array
+            items:
+              type: integer
+              format: int64
+            example: [1, 2, 3]
+        - name: transactionStatuses
+          description: Set of transaction statuses
+          in: query
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/TransactionStatus"
+        - name: transactionTypes
+          in: query
+          description: Set of transaction types
+          schema:
+            items:
+              $ref: "#/components/schemas/TransactionType"
+            type: array
+        - name: waitingToBeBatched
+          in: query
+          description: |
+            When set, all cold transactions waiting to be batched are returned.
+          schema:
+            type: boolean
+      tags:
+        - Transactions
+  /api/v2/transactions/{transactionID}:
+    get:
+      operationId: getTransaction
+      summary: Get transaction by ID
+      description: Retrieve details of a specific transaction.
+      tags:
+        - Transactions
+      parameters:
+        - name: transactionID
+          schema:
+            $ref: "#/components/schemas/TransactionID"
+          description: ID of the transaction
+          in: path
+          required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v2/transactions/download:
+    get:
+      operationId: listTransactionsByDownload
+      summary: Download transactions
+      description: Download the list of transactions as a zip file.
+      tags:
+        - Transactions
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                example: attachment; filename="transactions.zip"
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v2/transfers:
+    post:
+      operationId: createTransfer
+      summary: Create a new transfer
+      description: Creates a new transfer transaction with specified blockchain parameters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransferPost"
+            examples:
+              ethereum_transfer:
+                summary: Ethereum transfer with EIP-1559 gas pricing
+                value:
+                  type: "transfer"
+                  assetID: 12
+                  toAddressAmountArray:
+                    - address: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
+                  fromAddressAmountArray:
+                    - address: "0x8ba1f109551bD432803012645Hac136c"
+                      amount: "1000000000000000000"
+                  blockchainSpec:
+                    evm:
+                      Gas: "21000"
+                      MaxFeePerGas: "20000000000"
+                      MaxPriorityFeePerGas: "2000000000"
+                  reference: "ref: #1432"
+              bitcoin_transfer:
+                summary: Bitcoin transfer with custom fee
+                value:
+                  type: "transfer"
+                  assetID: 2
+                  toAddressAmountArray:
+                    - address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa"
+                      amount: "60000000"
+                    - address: "1dice8EMZmqKvrGE4Qc9bUFf9PX3xaYDp"
+                      amount: "40000000"
+                  fromAddressAmountArray:
+                    - address: "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2"
+                      amount: "100000000"
+                  blockchainSpec:
+                    Bitcoin:
+                      FeePerVByte: 10
+                  reference: "ref: #1432"
+              contract_interaction:
+                summary: Smart contract interaction
+                value:
+                  type: "contract"
+                  assetID: 12
+                  toAddressAmountArray:
+                    - address: "0xA0b86a33E6441b8c4C8C0e4b8b8c4C8C0e4b8b8c4"
+                      calldata: "0xa9059cbb000000000000000000000000742d35cc6634c0532925a3b8d4c9db96c4b4d8b6000000000000000000000000000000000000000000000000000000000000000a"
+                  fromAddressAmountArray:
+                    - address: "0x8ba1f109551bD432803012645Hac136c"
+                      amount: "0"
+                  reference: "ref: #1432"
+              replace_by_fee:
+                summary: Replace by fee transaction
+                value:
+                  type: "transfer"
+                  assetID: 12
+                  toAddressAmountArray:
+                    - address: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
+                  fromAddressAmountArray:
+                    - address: "0x8ba1f109551bD432803012645Hac136c"
+                      amount: "1000000000000000000"
+                  blockchainSpec:
+                    evm:
+                      MaxFeePerGas: "25000000000"
+                      MaxPriorityFeePerGas: "3000000000"
+                      Nonce: "42"
+                  reference: "ref: #1432"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transfer"
+              examples:
+                ethereum_transfer_response:
+                  summary: Ethereum transfer response
+                  value:
+                    metadata:
+                      id: 12345
+                      createdAt: "2024-01-15T10:30:00Z"
+                      updatedAt: "2024-01-15T10:30:00Z"
+                    config:
+                      type: "transfer"
+                      assetID: 1
+                      toAddressAmountArray:
+                        - address: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
+                      fromAddressAmountArray:
+                        - address: "0x8ba1f109551bD432803012645Hac136c"
+                          amount: "1000000000000000000"
+                          accountID: 12345
+                      reference: "Transfer to exchange for trading"
+                    status:
+                      status: "pending"
+                      txHash: null
+                      blockNumber: null
+                      fee: "0.00042"
+          description: Created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Transactions
+  /api/v2/operations/{operationID}:
+    get:
+      operationId: getMPAOperationByID
+      summary: Get MPA operation by ID
+      description: Retrieve details of a specific MPA operation.
+      tags:
+        - Operations
+      parameters:
+        - name: operationID
+          schema:
+            $ref: "#/components/schemas/MPAAsyncOperationID"
+          description: The MPA async operation ID of the operation.
+          in: path
+          required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationState"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/raw-transfers:
+    post:
+      operationId: createRawTransfer
+      summary: Create a new raw transfer
+      description: Creates a new raw transfer transaction with specified blockchain parameters
+      tags:
+        - Transactions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RawTransferPost"
+            examples:
+              ethereum_transfer:
+                summary: Ethereum raw transfer 
+                value:
+                  protocol: "ethereum"
+                  network: "mainnet"
+                  symbol: "ETH"
+                  rawTransaction: "0x..."
+                  fromAddress: "0x8ba1f109551bD432803012645Hac136c"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RawTransferResponse"
+          description: Created
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /api/v2/users:
+    description: also accounts for system users
+    get:
+      operationId: listUsers
+      summary: List all users in wallet
+      description: Retrieve a list of all users and system users in the wallet.
+      tags:
+        - Users
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+    post:
+      operationId: createUser
+      summary: Create new user
+      description: Add a new user to the wallet.
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPost"
+      responses:
+        "201":
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/users/{userID}:
+    get:
+      operationId: getUser
+      summary: Get user by ID
+      description: Retrieve details of a specific user.
+      tags:
+        - Users
+      parameters:
+        - $ref: "#/components/parameters/UserID"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+    patch:
+      operationId: patchUser
+      summary: Update user state
+      description: |
+        Change the state of a user from `active` to `pending onboarding`. No
+        payload needed.
+      tags:
+        - Users
+      parameters:
+        - $ref: "#/components/parameters/UserID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+    delete:
+      operationId: deleteUser
+      summary: Delete a user
+      description: Remove a user from the system.
+      tags:
+        - Users
+      parameters:
+        - $ref: "#/components/parameters/UserID"
+      responses:
+        "204":
+          description: User deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /api/v2/staking-withdrawals:
+    post:
+      operationId: createStakingWithdrawal
+      summary: Create staking withdrawal
+      description: Create a new staking withdrawal transaction for validator unstaking.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StakingWithdrawalParams"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StakingWithdrawal"
+          description: OK
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Staking
+  /api/v2/automated-approvers:
+    get:
+      operationId: listAutomatedApprovers
+      summary: List automated approvers
+      description: Retrieve a list of automated approvers.
+      tags:
+        - Automated Approvers
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutomatedApproverList"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+    post:
+      operationId: createAutomatedApprover
+      summary: Create automated approver
+      description: Create a new automated approver for transaction approval.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutomatedApproverCreateParams"
+        required: true
+      responses:
+        "202":
+          description: Async request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutomatedApprover"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+      tags:
+        - Automated Approvers
+  /api/v2/automated-approvers/{automatedApproverID}:
+    patch:
+      operationId: patchAutomatedApprover
+      summary: Update automated approver
+      description: Append a public key to a specific automated approver.
+      tags:
+        - Automated Approvers
+      parameters:
+        - $ref: "#/components/parameters/AutomatedApproverID"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AutomatedApproverPatchParams"
+      responses:
+        "202":
+          description: Async request accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AutomatedApprover"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+        default:
+          $ref: "#/components/responses/UnexpectedError"
+  /live:
+    get:
+      tags:
+        - Health
+      operationId: getLive
+      summary: Health check - live
+      description: Check if the server is up and running.
+      responses:
+        "204":
+          description: The server is up and running.
+        "502":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /logout:
+    post:
+      tags:
+        - Users
+      operationId: logout
+      summary: Logout user
+      description: Logout the current user session.
+      responses:
+        "204":
+          description: Successful logout
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+  /ready:
+    get:
+      tags:
+        - Health
+      operationId: getReady
+      summary: Health check - ready
+      description: Check if the server is ready to handle requests.
+      responses:
+        "204":
+          description: The server is ready to handle requests.
+        "502":
+          $ref: "#/components/responses/ServiceUnavailable"
