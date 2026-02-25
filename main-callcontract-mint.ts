@@ -12,11 +12,11 @@ declare const require: any;
 declare const module: any;
 
 // Configuration
-const WITHDRAWAL_ADDRESS = '0xab5D896C169Ef6f9870360Fa7D17B63E5E5D8832';
-const RECEIVER_ADDRESS = '0xc77C7d0683f91fC805a9d2AC1E85C5621278dBef';
-const Blockdaemon_CONTRACT_ADDRESS = '0x21741B361292bBF43c5069d2477c159494071AfF';  //BD1404
-const ASSET_ID = 12; // ETH
-const WITHDRAW_AMOUNT = '34'; // BD1404 token
+const WITHDRAWAL_ADDRESS = '0xdae9d8CdCEAF02b55CEc47C37F379087E069e496';
+const RECEIVER_ADDRESS = '0x42468CF04896D579323E33F7eEbCf3d88064270a';
+const Blockdaemon_CONTRACT_ADDRESS = '0x9eab99c8308c4371165be9da9cb663ec40dbb3d3';  //BD1404
+const ASSET_ID = 16; // ETH-ETHEREUM-SEPOLIA
+const MINT_AMOUNT = '30'; // BD1404 token
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
 OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY) || '';
@@ -25,19 +25,19 @@ function createTransferCalldata(receiverAddress: string): string {
   try {
     // Standard ERC20 transfer function: transfer(address to, uint256 amount)
     const abi = parseAbi([
-      'function transfer(address to, uint256 amount)'
+      'function mint(address to, uint256 amount)'
     ]);
     
     // Convert amount to wei using viem helper (assumes 18 decimals)
-    const amountInWei = parseEther(WITHDRAW_AMOUNT);
+    const amountInWei = parseEther(MINT_AMOUNT);
     
     const calldata = encodeFunctionData({
       abi,
-      functionName: 'transfer',
+      functionName: 'mint',
       args: [receiverAddress as `0x${string}`, amountInWei]
     });
     
-    console.log(`✅ Generated calldata - function transfer(address to, uint256 amount): ${calldata}`);
+    console.log(`✅ Generated calldata - function mint(address to, uint256 amount): ${calldata}`);
     return calldata;
   } catch (error) {
     console.error('❌ Error creating calldata:', error);
@@ -62,12 +62,12 @@ async function createTransfer(calldata: string, fromAddress: string): Promise<an
           amount: "0",
         }
       ],
-      blockchainSpec: {
-        evm: {
-          Gas: "95000",
-        }
-      },
-      reference: 'BD1404 transfer ref:abc123'
+      // blockchainSpec: {
+      //   evm: {
+      //     Gas: "95000",
+      //   }
+      // },
+      reference: 'BD1404 mint ref:abc123'
     };
     
     const transfer = await TransactionsService.createTransfer(transferPost) as any;
@@ -165,10 +165,10 @@ async function monitorTransaction(transactionId: number): Promise<string | null>
 }
 
 async function main() {
-  console.log('🚀 Starting ERC1404 transfer...');
+  console.log('🚀 Starting ERC1404 mint...');
   console.log(`📋 Configuration:`);
   console.log(`  - BD1404 Token Contract: ${Blockdaemon_CONTRACT_ADDRESS}`);
-  console.log(`  - Amount: ${WITHDRAW_AMOUNT} ETH`);
+  console.log(`  - Amount: ${MINT_AMOUNT}`);
   console.log(`  - Asset ID: ${ASSET_ID}`);
   console.log('');
   
@@ -183,7 +183,7 @@ async function main() {
     
     // Step 4: Monitor transaction
     const txHash = await monitorTransaction(parseInt(transferId));
-    console.log(`🔗 View on Etherscan: https://hoodi.etherscan.io/tx/${txHash}`);
+    console.log(`🔗 View on Etherscan: https://sepolia.etherscan.io/tx/${txHash}`);
     
   } catch (error) {
     console.error('💥 Error in main process:', error);

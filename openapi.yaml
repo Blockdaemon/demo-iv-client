@@ -1,4 +1,4 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   contact:
     email: info@blockdaemon.com
@@ -10,7 +10,7 @@ servers:
   - url: https://{domain}
     variables:
       domain:
-        default: my-customer-env.blockdaemon-wallet.com
+        default: api.your-wallet.blockdaemon-wallet.com
         description: The domain name of the server
 tags:
   - name: Accounts
@@ -127,7 +127,7 @@ components:
       required: false
       schema:
         type: string
-        format: data-time
+        format: date-time
     CreatedBefore:
       description: Filter used to find the resources created before a time-stamp.
       in: query
@@ -135,7 +135,7 @@ components:
       required: false
       schema:
         type: string
-        format: data-time
+        format: date-time
     Creator:
       description: ID of the user who created the resource
       in: query
@@ -482,7 +482,7 @@ components:
           example: 12345
         amount:
           type: string
-          example: "1000000000000000000"
+          example: "0"
         calldata:
           type: string
           description: Smart contract calldata for contract transfers
@@ -503,7 +503,7 @@ components:
           example: 12345
         amount:
           type: string
-          example: "1000000000000000000"
+          example: "0"
     AddressAmount:
       description: Address and crypto amount in a transaction (legacy type for non-transfer contexts)
       type: object
@@ -1053,7 +1053,7 @@ components:
       properties:
         createdAt:
           type: string
-          format: time-date
+          format: date-time
         creatorID:
           type: integer
           format: int64
@@ -1066,7 +1066,7 @@ components:
           $ref: "#/components/schemas/Name"
         updatedAt:
           type: string
-          format: time-date
+          format: date-time
     OperationState:
       type: object
       required:
@@ -1074,7 +1074,7 @@ components:
       properties:
         status:
           type: string
-          description: | 
+          description: |
             Status of the MPA operation. Terminal states are: "rej", "err", "fin", "can".
         errorDetails:
           $ref: "#/components/schemas/ErrorDetails"
@@ -1170,6 +1170,7 @@ components:
     OperationType:
       enum:
         - addERC20
+        - addSPL
         - getAddress
         - backupMasterKey
         - createMasterKey
@@ -1197,9 +1198,11 @@ components:
         - unregisterBlockchainNetwork
         - fundSubAddresses
         - consolidateFunds
+        - associateNonceAccount
         - ""
       x-enum-varnames:
         - addERC20
+        - addSPL
         - getAddress
         - backupMasterKey
         - createMasterKey
@@ -1227,6 +1230,7 @@ components:
         - unregisterBlockchainNetwork
         - fundSubAddresses
         - consolidateFunds
+        - associateNonceAccount
         - anyOperation
       type: string
     Policy:
@@ -1420,7 +1424,7 @@ components:
           type: string
       required:
         - alertLevel
-        - category
+        - categoryId
         - service
     Stake:
       properties:
@@ -1620,7 +1624,7 @@ components:
             $ref: "#/components/schemas/FromAddressAmount"
           example:
             - address: "0x8ba1f109551bD432803012645Hac136c"
-              amount: "1000000000000000000"
+              amount: "0.5"
         feePriority:
           type: string
           enum:
@@ -1669,7 +1673,7 @@ components:
             $ref: "#/components/schemas/FromAddressAmount"
           example:
             - address: "0x8ba1f109551bD432803012645Hac136c"
-              amount: "1000000000000000000"
+              amount: "1"
         feePriority:
           type: string
           enum:
@@ -1738,9 +1742,12 @@ components:
     TransferResponse:
       required:
         - ID
+        - asyncOperationID
       properties:
         ID:
           type: string
+        asyncOperationID:
+          $ref: "#/components/schemas/MPAAsyncOperationID"
     User:
       type: object
       required:
@@ -1794,8 +1801,18 @@ components:
     UserState:
       type: string
       enum:
-        - active
-        - pending onboarding
+        - New
+        - PendingApproval
+        - PendingConfirmation
+        - PendingOnboarding
+        - Active
+        - PendingReset
+        - PendingResetConfirmation
+        - PendingResetApproval
+        - PendingDeletion
+        - PendingDeletionConfirmation
+        - PendingDeletionApproval
+        - Deleted
     UserStatus:
       type: object
       properties:
@@ -1803,7 +1820,7 @@ components:
           description: apiKey will only be populated once upon the creation of a `server` user.
           type: string
         asyncOperationID:
-          $ref: "#/components/schemas/AsyncOperationID"
+          $ref: "#/components/schemas/MPAAsyncOperationID"
     Validator:
       properties:
         metadata:
@@ -2735,7 +2752,7 @@ paths:
     post:
       operationId: createColdPairingMessageByUpload
       summary: Upload cold pairing message
-      description: Upload the cold wallet's pairing message after the cold wallet has received the pairing message from the hot wallet.
+      description: Upload the cold wallet's pairing message after the cold wallet has received the pairing message from the hot wallet
       tags:
         - Cold Wallet
       requestBody:
@@ -3135,6 +3152,34 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/PolicyConfig"
+            examples:
+              call_contract_allow_specific_contract_and_destination:
+                summary: CallContract policy - allow calls to a specific contract initiated by the marketops group with 1 approval from the AutomatedApproverGroup1 group
+                value:
+                  skipConfirmations: true
+                  entries:
+                    - policyUpdateOpType: callContract
+                      triggerGroup: "marketops"
+                      contractAddress: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"
+                      approverExpression:
+                        op: leaf
+                        requiredCount: 1
+                        groups:
+                          - "AutomatedApproverGroup1"
+              deploy_contract_from_source_account:
+                summary: DeployContract policy - allow contract deployment initiated by the issuerSystemUserGroup group with 2 approvals from the AutomatedApproverGroup1 group
+                value:
+                  skipConfirmations: true
+                  entries:
+                    - policyUpdateOpType: deployContract
+                      triggerGroup: "issuerSystemUserGroup"
+                      sourceAccountNames:
+                        - "IssuerVault"
+                      approverExpression:
+                        op: leaf
+                        requiredCount: 2
+                        groups:
+                          - "AutomatedApproverGroup1"
         required: true
       responses:
         "202":
@@ -3328,6 +3373,40 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
+    delete:
+      operationId: cancelTransaction
+      summary: Cancel a transaction
+      description: |
+        Cancel a pending transaction by cancelling its underlying MPA operation.
+        This will set the transaction's status to "Cancelled". Only transactions
+        that are not yet in a final state (Succeeded, Failed, Cancelled, Rejected,
+        Error) can be cancelled.
+      tags:
+        - Transactions
+      parameters:
+        - name: transactionID
+          schema:
+            $ref: "#/components/schemas/TransactionID"
+          description: ID of the transaction to cancel
+          in: path
+          required: true
+      responses:
+        "204":
+          description: Transaction cancelled successfully
+        "400":
+          $ref: "#/components/responses/BadRequest"
+          description: Transaction cannot be cancelled (e.g., already in final state, no associated MPA operation)
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+          description: Transaction not found
+        "409":
+          description: Operation cannot be cancelled (already in final state)
+        "500":
+          $ref: "#/components/responses/InternalServerError"
   /api/v2/transactions/download:
     get:
       operationId: listTransactionsByDownload
@@ -3376,7 +3455,7 @@ paths:
                     - address: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
                   fromAddressAmountArray:
                     - address: "0x8ba1f109551bD432803012645Hac136c"
-                      amount: "1000000000000000000"
+                      amount: "1"
                   blockchainSpec:
                     evm:
                       Gas: "21000"
@@ -3421,7 +3500,7 @@ paths:
                     - address: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
                   fromAddressAmountArray:
                     - address: "0x8ba1f109551bD432803012645Hac136c"
-                      amount: "1000000000000000000"
+                      amount: "1"
                   blockchainSpec:
                     evm:
                       MaxFeePerGas: "25000000000"
@@ -3450,7 +3529,7 @@ paths:
                         - address: "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6"
                       fromAddressAmountArray:
                         - address: "0x8ba1f109551bD432803012645Hac136c"
-                          amount: "1000000000000000000"
+                          amount: "1"
                           accountID: 12345
                       reference: "Transfer to exchange for trading"
                     status:
@@ -3514,7 +3593,7 @@ paths:
               $ref: "#/components/schemas/RawTransferPost"
             examples:
               ethereum_transfer:
-                summary: Ethereum raw transfer 
+                summary: Ethereum raw transfer
                 value:
                   protocol: "ethereum"
                   network: "mainnet"
