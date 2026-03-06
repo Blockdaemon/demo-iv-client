@@ -19,7 +19,7 @@ const ASSET_ID = 16; // ETH-ETHEREUM-SEPOLIA
 const MINT_AMOUNT = '30'; // BD1404 token
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY) || '';
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
 
 function createTransferCalldata(receiverAddress: string): string {
   try {
@@ -71,7 +71,7 @@ async function createTransfer(calldata: string, fromAddress: string): Promise<an
     };
     
     const transfer = await TransactionsService.createTransfer(transferPost) as any;
-    console.log(`✅ Transfer created with ID: ${transfer.ID}`);
+    console.log(`✅ Transfer created with ID: ${transfer.ID.toString()}`);
     return transfer;
   } catch (error) {
     console.error('❌ Error creating transfer:', error);
@@ -80,40 +80,18 @@ async function createTransfer(calldata: string, fromAddress: string): Promise<an
 }
 
 async function getTransactionStatus(transactionId: number): Promise<any> {
-  try {
-    const response = await TransactionsService.getTransaction(transactionId);
-    
-    // Handle the union type response
-    if ('error' in response) {
-      throw new Error(`API Error: ${response.error}`);
-    }
-    
-    const transaction = response as any;
-    
-    return transaction;
-  } catch (error) {
-    console.error(`❌ Error getting transaction status:`, error);
-    throw error;
-  }
+  return TransactionsService.getTransaction(transactionId);
 }
 
 async function monitorTransaction(transactionId: number): Promise<string | null> {
   console.log('👀 Monitoring transaction events...');
   
-  const maxAttempts = 10; // 5 minutes with 10-second intervals
+  const maxAttempts = 40;
   let attempts = 0;
   
   while (attempts < maxAttempts) {
     try {
-      // Get events from Events API
-      const eventsResponse = await EventsService.listEvents();
-      
-      // Handle the union type response
-      if ('error' in eventsResponse) {
-        throw new Error(`Events API Error: ${eventsResponse.error}`);
-      }
-      
-      const events = eventsResponse as any;
+      const events = await EventsService.listEvents() as any;
       
       // Filter events for this specific transaction
       const transactionEvents = events.list.filter((event: any) => 
@@ -179,7 +157,7 @@ async function main() {
       
     // Step 3: Create transfer
     const transfer = await createTransfer(calldata, WITHDRAWAL_ADDRESS);
-    const transferId = transfer.ID?.toString();
+    const transferId = transfer.metadata?.id?.toString() || transfer.ID?.toString() || 'unknown';
     
     // Step 4: Monitor transaction
     const txHash = await monitorTransaction(parseInt(transferId));
