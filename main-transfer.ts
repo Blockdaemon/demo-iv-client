@@ -4,6 +4,9 @@ import {
   EventsService,
   OpenAPI,
   TransferPost,
+  Account,
+  AccountAsset,
+  Address,
 } from './iv-sdk-typescript';
 
 // Node globals (for TS without @types/node in scope)
@@ -12,68 +15,59 @@ declare const require: any;
 declare const module: any;
 
 // Configuration
-const WITHDRAWAL_ADDRESS = '0xDbAfFC0756a4AB9620d46052788c8c17b172414D';
-const RECEIVER_ADDRESS = '0x52b09e2c73849B25F9b0328e2d4b444e9bd1EF30';
-const ASSET_ID = 13; // ETH
-const WITHDRAW_AMOUNT = '0.0001';
+const WITHDRAWAL_ADDRESS = '0x9276C335A583A9C1C7c947c5Ca474F665679C1cA';
+const RECEIVER_ADDRESS = '0x9E5ABB1E0c681bEAEF3DC853f83ABF8328DbDF41';
+const ASSET_ID = 12; // ETH
+const WITHDRAW_AMOUNT = '1';
 
-OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
+OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://americas-sales-team-1.api.blockdaemon-wallet.com';
 OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
 
-async function findAccountByWalletAddress(walletAddress: string): Promise<{account: any, ethAsset: any, ethAddress: any}> {  
-  try {
-    // Get all accounts
-    const response = await AccountsService.listAccounts();
-    
-    // Handle the union type response
-    if ('error' in response) {
-      throw new Error(`API Error: ${response.error}`);
-    }
-    
-    const accountList = response as any;
-    
-    if (!accountList.list || accountList.list.length === 0) {
-      throw new Error(`No accounts found in wallet`);
-    }
-    
-    // Search through all accounts to find the one with the matching wallet address
-    for (const account of accountList.list) {
-      if (!account.config?.assets || account.config.assets.length === 0) {
-        continue;
-      }
-      
-      // Find the Ethereum asset by protocol
-      const ethAsset = account.config.assets.find((asset: any) => 
-        asset.asset?.config?.protocol === 'ethereum' || 
-        asset.addresses?.some((addr: any) => addr.config?.protocol === 'ethereum')
-      );
-      
-      if (!ethAsset || !ethAsset.addresses || ethAsset.addresses.length === 0) {
-        continue;
-      }
-      
-      // Find the Ethereum address that matches our target wallet address
-      const ethAddress = ethAsset.addresses.find((addr: any) => 
-        addr.config?.protocol === 'ethereum' && 
-        addr.config?.address?.toLowerCase() === walletAddress.toLowerCase()
-      );
-      
-      if (ethAddress) {
-        console.log(`📊 Account: ${account.metadata?.name || account.metadata?.id}`);
-        console.log(`💰 ETH Asset: ${ethAsset.asset?.metadata?.name || 'ETH'} (ID: ${ethAsset.asset?.metadata?.id})`);
-        console.log(`🌐 Network: ${ethAddress.config.network}`);
-        console.log(`🔗 Protocol: ${ethAddress.config.protocol}`);
-        console.log(`💵 Balance: ${ethAsset.balance?.crypto?.value?.available || '0'} ${ethAsset.balance?.crypto?.unit || 'ETH'}`);
-        
-        return { account, ethAsset, ethAddress };
-      }
-    }
-    
-    throw new Error(`No account found with wallet address: ${walletAddress}`);
-  } catch (error) {
-    console.error('❌ Error finding account by wallet address:', error);
-    throw error;
+async function findAccountByWalletAddress(walletAddress: string, assetID: number): Promise<{account: Account, matchedAsset: AccountAsset, matchedAddress: Address}> {  
+  const response = await AccountsService.listAccounts();
+  
+  if ('code' in response) {
+    throw new Error(`API Error: ${response.message}`);
   }
+  
+  if (response.list.length === 0) {
+    throw new Error('No accounts found in wallet');
+  }
+  
+  for (const account of response.list) {
+    if (!account.config?.assets || account.config.assets.length === 0) {
+      continue;
+    }
+    
+    const targetAsset = account.config.assets.find((asset) =>
+      (asset.asset?.metadata as any)?.id === assetID
+    );
+    
+    if (!targetAsset || targetAsset.addresses.length === 0) {
+      continue;
+    }
+    
+    const targetAddress = targetAsset.addresses.find((addr) =>
+      addr.config?.address?.toLowerCase() === walletAddress.toLowerCase()
+    );
+    
+    if (targetAddress) {
+      const assetName = (targetAsset.asset?.metadata as any)?.name;
+      if (!assetName) {
+        throw new Error(`Asset name not found for asset ID: ${assetID}`);
+      }
+
+      console.log(`📊 Account: ${(account.metadata as any)?.name}`);
+      console.log(`💰 Asset: ${assetName} (ID: ${assetID})`);
+      console.log(`🔗 Protocol: ${targetAddress.config.protocol}`);
+      console.log(`🌐 Network: ${targetAddress.config.network}`);
+      console.log(`💵 Balance: ${targetAsset.balance?.crypto?.value?.available || '0'} ${targetAsset.balance?.crypto?.unit || ''}`);
+      
+      return { account, matchedAsset: targetAsset, matchedAddress: targetAddress };
+    }
+  }
+  
+  throw new Error(`No account found with asset ID ${assetID} and wallet address: ${walletAddress}`);
 }
 
 async function createTransfer(fromAddress: string, receiverAddress: string, amount: string, assetID: number): Promise<any> {
@@ -92,7 +86,7 @@ async function createTransfer(fromAddress: string, receiverAddress: string, amou
           amount: amount,
         }
       ],
-      reference: 'ETH transfer ref:abc123'
+      reference: 'transfer ref:abc123'
     };
     
     const transfer = await TransactionsService.createTransfer(transferPost) as any;
@@ -105,40 +99,18 @@ async function createTransfer(fromAddress: string, receiverAddress: string, amou
 }
 
 async function getTransactionStatus(transactionId: number): Promise<any> {
-  try {
-    const response = await TransactionsService.getTransaction(transactionId);
-    
-    // Handle the union type response
-    if ('error' in response) {
-      throw new Error(`API Error: ${response.error}`);
-    }
-    
-    const transaction = response as any;
-    
-    return transaction;
-  } catch (error) {
-    console.error(`❌ Error getting transaction status:`, error);
-    throw error;
-  }
+  return TransactionsService.getTransaction(transactionId);
 }
 
 async function monitorTransaction(transactionId: number): Promise<string | null> {
   console.log('👀 Monitoring transaction events...');
   
-  const maxAttempts = 10;
+  const maxAttempts = 40;
   let attempts = 0;
   
   while (attempts < maxAttempts) {
     try {
-      // Get events from Events API
-      const eventsResponse = await EventsService.listEvents();
-      
-      // Handle the union type response
-      if ('error' in eventsResponse) {
-        throw new Error(`Events API Error: ${eventsResponse.error}`);
-      }
-      
-      const events = eventsResponse as any;
+      const events = await EventsService.listEvents() as any;
       
       // Filter events for this specific transaction
       const transactionEvents = events.list.filter((event: any) => 
@@ -190,15 +162,17 @@ async function monitorTransaction(transactionId: number): Promise<string | null>
 }
 
 async function main() {
-  console.log('🚀 Starting ETH transfer...');
+  console.log('🚀 Starting transfer...');
   console.log(`📋 Configuration:`);
-  console.log(`  - Amount: ${WITHDRAW_AMOUNT} ETH`);
+  console.log(`  - Amount: ${WITHDRAW_AMOUNT}`);
+  console.log(`  - Asset ID: ${ASSET_ID}`);
+  console.log(`  - Withdrawal Address: ${WITHDRAWAL_ADDRESS}`);
   console.log(`  - Receiver Address: ${RECEIVER_ADDRESS}`);
   console.log('');
   
   try {
-    // Step 1: Find account by wallet address and get balance info
-    const { account, ethAsset, ethAddress } = await findAccountByWalletAddress(WITHDRAWAL_ADDRESS);
+    // Step 1: Find account by wallet address and asset ID, and get balance info
+    await findAccountByWalletAddress(WITHDRAWAL_ADDRESS, ASSET_ID);
     console.log('');
     
     // Step 2: Create transfer
@@ -207,7 +181,7 @@ async function main() {
     
     // Step 3: Monitor transaction
     const txHash = await monitorTransaction(parseInt(transferId));
-    console.log(`🔗 View on Etherscan: https://hoodi.etherscan.io/tx/${txHash}`);
+    console.log(`🔗 Transaction Hash: ${txHash}`);
     
   } catch (error) {
     console.error('💥 Error in main process:', error);

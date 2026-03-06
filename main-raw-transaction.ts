@@ -13,7 +13,7 @@ import {
   serializeTransaction,
   type Hex,
 } from 'viem';
-import { baseSepolia } from 'viem/chains';
+import { hoodi } from 'viem/chains';
 
 // Node globals (for TS without @types/node in scope)
 declare const process: any;
@@ -21,10 +21,10 @@ declare const require: any;
 declare const module: any;
 
 // Configuration
-const WITHDRAWAL_ADDRESS = '0x05E66055CdF2aC0B1f14F43a50Cf7198B6800509';
-const RECEIVER_ADDRESS = '0x6372cCbc575573586FE56810bb9907273D979E8a';
+const WITHDRAWAL_ADDRESS = '0xf688F001164Ceac87014d44d83612FB32cfDc289';
+const RECEIVER_ADDRESS = '0x9665A2147AE6100eC4FDAEfE5FA6142b8926b39b';
 
-const WITHDRAW_AMOUNT = '0.02';
+const WITHDRAW_AMOUNT = '0.00001';
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
 OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
@@ -35,8 +35,8 @@ async function buildUnsignedEthTransferHex(params: {
   amountEth: string;
 }): Promise<{ unsignedHex: Hex; tx: any }> {
   const client = createPublicClient({
-    chain: baseSepolia,
-    transport: http(),
+    chain: hoodi,
+    transport: http('https://ethereum-hoodi-rpc.publicnode.com'),
   });
 
   const nonce = await client.getTransactionCount({ address: params.fromAddress });
@@ -46,7 +46,7 @@ async function buildUnsignedEthTransferHex(params: {
 
   // Build an EIP-1559 (type 2) transaction and include empty v, r, s
   const txEip1559 = {
-    chainId: baseSepolia.id,
+    chainId: hoodi.id,
     nonce,
     to: params.toAddress,
     value,
@@ -58,12 +58,8 @@ async function buildUnsignedEthTransferHex(params: {
     data: '0x' as Hex,
   };
 
-  // Pass a dummy signature so the RLP list has 12 elements (v, r, s are zeroed)
-  const unsignedHex = serializeTransaction(txEip1559, {
-    v: 0n,
-    r: '0x0' as Hex,
-    s: '0x0' as Hex,
-  });
+  // Pass a dummy signature so the RLP list has 12 elements (v, r, s are zeroed) (remove after MPA version v8.16)
+  const unsignedHex = serializeTransaction(txEip1559);
   console.log(`🧾 Unsigned Transaction: ${unsignedHex}`);
   return { unsignedHex, tx: txEip1559 };
 }
@@ -77,9 +73,9 @@ async function createRawTransfer(fromAddress: string, receiverAddress: string, a
     });
 
     const requestBody: RawTransferPost = {
-      protocol: Protocol.BASE,
-      network: Network.SEPOLIA,
-      symbol: 'BASE-ETH',
+      protocol: Protocol.ETHEREUM,
+      network: Network.HOODI,
+      symbol: 'ETH',
       fromAddress,
       rawTransaction: unsignedHex,
     };
@@ -140,7 +136,7 @@ async function waitForOperationToFinish(operationId: string): Promise<{ transact
 }
 
 async function main() {
-  console.log('🚀 Starting Base Sepolia transfer...');
+  console.log('🚀 Starting transfer...');
   console.log(`📋 Configuration:`);
   console.log(`  - Amount: ${WITHDRAW_AMOUNT} ETH`);
   console.log(`  - Receiver Address: ${RECEIVER_ADDRESS}`);
@@ -159,9 +155,9 @@ async function main() {
     if (result.signedTransaction) {
       console.log(`\n🧾 Signed Transaction: ${result.signedTransaction}`);
 
-      // Broadcast the signed transaction to Base Sepolia RPC
+      // Broadcast the signed transaction to RPC
       const client = createPublicClient({
-        chain: baseSepolia,
+        chain: hoodi,
         transport: http(),
       });
 
@@ -170,8 +166,7 @@ async function main() {
         : (`0x${result.signedTransaction}` as Hex);
 
       const txHash = await client.sendRawTransaction({ serializedTransaction: serialized });
-      console.log(`🔗 Base Sepolia tx hash: ${txHash}`);
-      console.log(`🔗 Base Sepolia explorer: https://sepolia.basescan.org/tx/${txHash}`);
+      console.log(`🔗 tx hash: ${txHash}`);
     }
     
   } catch (error) {
