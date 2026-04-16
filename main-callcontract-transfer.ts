@@ -12,11 +12,11 @@ declare const require: any;
 declare const module: any;
 
 // Configuration
-const WITHDRAWAL_ADDRESS = '0xdae9d8CdCEAF02b55CEc47C37F379087E069e496';
-const RECEIVER_ADDRESS = '0x42468CF04896D579323E33F7eEbCf3d88064270a';
-const Blockdaemon_CONTRACT_ADDRESS = '0x1c7d4b196cb0c7b01d743fbc6116a902379c7238';  //BD1404
-const ASSET_ID = 16; // ETH
-const WITHDRAW_AMOUNT = '0.5'; // BD1404 token
+const WITHDRAWAL_ADDRESS = '0x6081ebA37Eab2B67f38D2aE4e7D3C01a986b63B6';
+const RECEIVER_ADDRESS = '0xA53bDd36e9682Bc05b400b3a6DE56f2E4Df29843';
+const Blockdaemon_CONTRACT_ADDRESS = '0x90653ad640E6D8147725F7aB686BE091291941E9';  //BD1404
+const ASSET_ID = 12; // ETH
+const WITHDRAW_AMOUNT = '50000000000000000000'; // BD1404 token
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
 OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY) || '';

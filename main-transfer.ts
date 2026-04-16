@@ -15,10 +15,10 @@ declare const require: any;
 declare const module: any;
 
 // Configuration
-const WITHDRAWAL_ADDRESS = '0x9276C335A583A9C1C7c947c5Ca474F665679C1cA';
-const RECEIVER_ADDRESS = '0x9E5ABB1E0c681bEAEF3DC853f83ABF8328DbDF41';
+const WITHDRAWAL_ADDRESS = '0x9E5ABB1E0c681bEAEF3DC853f83ABF8328DbDF41';
+const RECEIVER_ADDRESS = '0x3f75fE68752f6A127e8D73a697D210148E4D75e8';
 const ASSET_ID = 12; // ETH
-const WITHDRAW_AMOUNT = '1';
+const WITHDRAW_AMOUNT = '0.5';
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://americas-sales-team-1.api.blockdaemon-wallet.com';
 OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
