@@ -208,121 +208,6 @@ paths:
           $ref: '#/components/responses/InternalServerError'
         default:
           $ref: '#/components/responses/UnexpectedError'
-  /api/v2/addresses:
-    get:
-      operationId: listAddresses
-      summary: List addresses
-      description: >-
-        Retrieve a list of addresses with optional filtering by account and
-        asset.
-      parameters:
-        - $ref: '#/components/parameters/AccountIDQuery'
-        - $ref: '#/components/parameters/AssetIDQuery'
-      tags:
-        - Addresses
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddressList'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/UnexpectedError'
-    post:
-      operationId: createAddress
-      summary: Create address
-      description: Create a new address for Bitcoin (only for Bitcoin).
-      tags:
-        - Addresses
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddressPost'
-      responses:
-        '201':
-          description: Created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/UnexpectedError'
-  /api/v2/addresses/{addressID}:
-    get:
-      operationId: getAddress
-      summary: Get address by ID
-      description: Retrieve details of a specific address.
-      tags:
-        - Addresses
-      parameters:
-        - $ref: '#/components/parameters/AddressID'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-    patch:
-      operationId: patchAddress
-      summary: Update address
-      description: >-
-        Update address configuration including token settings and wallet
-        connections.
-      tags:
-        - Addresses
-      parameters:
-        - $ref: '#/components/parameters/AddressID'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddressPatch'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Address'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-        default:
-          $ref: '#/components/responses/UnexpectedError'
   /api/v2/assets:
     get:
       operationId: listAssets
@@ -2019,8 +1904,11 @@ paths:
           $ref: '#/components/responses/ServiceUnavailable'
   /api/cwp/address/get:
     post:
-      summary: Get address
+      summary: Get address (deprecated)
+      deprecated: true
       description: >
+        Deprecated: Use `POST /addresses/get` instead.
+
         Gets an address for the native asset in the specified master key and
         account.
 
@@ -2049,42 +1937,73 @@ paths:
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/start/addCantonToken:
+  /api/cwp/addresses/get:
     post:
-      summary: Start Add Canton Token operation
+      summary: Get address
       description: >
-        Start an async Add Canton Token operation.
+        Gets an address for the native asset of the chain identified by CAIP-2.
 
-        Status can be queried with [`GET
-        /operation/{operationID}/status`](#/paths/~1operation~1{operationID}~1status/get).
-      operationId: cwpstartAddCantonToken
+        For a given (masterKey, caip2, account), a previously unused index can
+        only
+
+        take a value one greater than the maximal previously used index (zero if
+        no previous calls).
+      operationId: cwpgetAddressCAIP2
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/cwpAddCantonTokenIntent'
+              $ref: '#/components/schemas/cwpGetAddressCAIP2Request'
       responses:
         '200':
-          description: Operation started
+          description: The address
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/cwpStartOperationResponse'
+                $ref: '#/components/schemas/cwpGetAddressResponse'
         '400':
           $ref: '#/components/responses/cwpBadRequest'
         '500':
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/start/registerToken:
+  /api/cwp/addresses/resolve:
+    post:
+      summary: Resolve address
+      description: >
+        Resolves a blockchain address to the master key, account, and address
+        index that own it.
+      operationId: cwpresolveAddress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpResolveAddressRequest'
+      responses:
+        '200':
+          description: The address owner
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpResolveAddressResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '404':
+          description: Address not found
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/registerToken:
     post:
       summary: Start Register Token operation
       description: >
         Start an async Register Token operation.
 
         Status can be queried with [`GET
-        /operation/{operationID}/status`](#/paths/~1operation~1{operationID}~1status/get).
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
       operationId: cwpstartRegisterToken
       requestBody:
         required: true
@@ -2105,7 +2024,7 @@ paths:
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/start/registerCustomChain:
+  /api/cwp/operations/start/registerCustomChain:
     post:
       summary: Start Register Custom Chain operation
       description: >
@@ -2119,7 +2038,7 @@ paths:
         it.
 
         Status can be queried with [`GET
-        /operation/{operationID}/status`](#/paths/~1operation~1{operationID}~1status/get).
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
       operationId: cwpstartRegisterCustomChain
       requestBody:
         required: true
@@ -2140,7 +2059,27 @@ paths:
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/chain/registerknown:
+  /api/cwp/chains/list:
+    get:
+      summary: List registered chains
+      description: >-
+        Returns all chains registered for the tenant (name, CAIP-2, testnet
+        flag).
+      operationId: cwplistChains
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpChain'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/chains/registerknown:
     post:
       summary: Register a known chain
       description: >
@@ -2163,21 +2102,86 @@ paths:
               $ref: '#/components/schemas/cwpRegisterKnownChainRequest'
       responses:
         '200':
-          description: Chain registered successfully
+          description: >-
+            Chain registered successfully. Response body is empty (no JSON
+            payload).
         '400':
           $ref: '#/components/responses/cwpBadRequest'
         '500':
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/start/updateConfigRestriction:
+  /api/cwp/tokens/list:
+    get:
+      summary: List registered tokens
+      description: >-
+        Returns all tokens registered for the tenant (symbol, decimals, CAIP-2,
+        CAIP-19, chain name, testnet).
+      operationId: cwplistTokens
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpToken'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/search:
+    post:
+      summary: Search operations
+      description: >
+        Returns operations' intents matching the filter. If `Statuses` is
+        omitted or empty, only operations
+
+        that are not in a final state (`Succeeded` or `Failed`) are included. If
+        `Limit` is omitted or zero,
+
+        there is no cap on the number of results.
+
+        Each element of `Intents` is a JSON intent. `OperationType` identifies
+        which intent variant applies; see `IntentItem`.
+
+        Returned intents also include common metadata on every item: what is
+        being requested (`OperationType`),
+
+        optional caller-chosen identifiers (`OperationID`, `InitiatorID`), and
+        server fields such as `Timestamp`
+
+        and `InitiatorName` when present (same fields as documented on each
+        variant under `IntentItem`).
+      operationId: cwpsearchOperations
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpOperationFilter'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpListOperationsResult'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/updateConfigRestriction:
     post:
       summary: Start Update Config Restriction operation
       description: >
         Start an async Update Config Restriction operation.
 
         Status can be queried with [`GET
-        /operation/{operationID}/status`](#/paths/~1operation~1{operationID}~1status/get).
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
       operationId: cwpstartUpdateConfigRestriction
       requestBody:
         required: true
@@ -2198,14 +2202,14 @@ paths:
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/start/updatePolicyRestriction:
+  /api/cwp/operations/start/updatePolicyRestriction:
     post:
       summary: Start Update Policy Restriction operation
       description: >
         Start an async Update Policy Restriction operation.
 
         Status can be queried with [`GET
-        /operation/{operationID}/status`](#/paths/~1operation~1{operationID}~1status/get).
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
       operationId: cwpstartUpdatePolicyRestriction
       requestBody:
         required: true
@@ -2226,14 +2230,14 @@ paths:
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/start/updateTransactionRestriction:
+  /api/cwp/operations/start/updateTransactionRestriction:
     post:
       summary: Start Update Transaction Restriction operation
       description: >
         Start an async Update Transaction Restriction operation.
 
         Status can be queried with [`GET
-        /operation/{operationID}/status`](#/paths/~1operation~1{operationID}~1status/get).
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
       operationId: cwpstartUpdateTransactionRestriction
       requestBody:
         required: true
@@ -2254,7 +2258,7 @@ paths:
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/start/makeTransaction:
+  /api/cwp/operations/start/makeTransaction:
     post:
       summary: Start Make Transaction operation
       description: >
@@ -2268,7 +2272,7 @@ paths:
         blockchain-specific parameters.
 
         Status can be queried with [`GET
-        /operation/{operationID}/status`](#/paths/~1operation~1{operationID}~1status/get).
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
       operationId: cwpstartMakeTransaction
       requestBody:
         required: true
@@ -2289,30 +2293,22 @@ paths:
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/start/transfer:
+  /api/cwp/operations/start/deleteToken:
     post:
-      summary: Start Transfer operation
+      summary: Start Delete Token operation
       description: >
-        Start an async Transfer operation. Transfers assets from a source
-        account to one or more
-
-        internal or external destinations. For UTXO-based blockchains, a
-        transaction output is
-
-        generated for each destination amount; for account-based blockchains and
-        internal
-
-        transfers, the list must have length 1.
+        Start an async Delete Token operation. Removes a previously registered
+        token.
 
         Status can be queried with [`GET
-        /operation/{operationID}/status`](#/paths/~1operation~1{operationID}~1status/get).
-      operationId: cwpstartTransfer
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartDeleteToken
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/cwpTransferIntent'
+              $ref: '#/components/schemas/cwpDeleteTokenIntent'
       responses:
         '200':
           description: Operation started
@@ -2326,7 +2322,828 @@ paths:
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/{operationID}/status:
+  /api/cwp/operations/start/associateToSPLToken:
+    post:
+      summary: Start Associate to SPL Token operation
+      description: >
+        Start an async Associate to SPL Token operation. Creates an associated
+        token account for the given SPL token.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartAssociateToSPLToken
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpAssociateToSPLTokenIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/associateToNonceAccount:
+    post:
+      summary: Start Associate Nonce Account operation
+      description: >
+        Start an async Associate Nonce Account operation. Creates a Solana nonce
+        account for durable transactions.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartAssociateNonceAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpAssociateNonceAccountIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/activateStellarAddress:
+    post:
+      summary: Start Activate Stellar Address operation
+      description: >
+        Start an async Activate Stellar Address operation. Funds and activates a
+        Stellar address with the minimum XLM balance.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartActivateStellarAddress
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpActivateStellarAddressIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/backupMasterKey:
+    post:
+      summary: Start Backup Master Key operation
+      description: >
+        Start an async Backup Master Key operation. Returns encrypted key shares
+        for offline storage.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartBackupMasterKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpBackupMasterKeyIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/createMasterKey:
+    post:
+      summary: Start Create Master Key operation
+      description: >
+        Start an async Create Master Key operation. Generates a new MPC master
+        key via distributed key generation.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartCreateMasterKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpCreateMasterKeyIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/createAccount:
+    post:
+      summary: Start Create Account operation
+      description: >
+        Start an async Create Account operation. Creates a named account under
+        an existing master key.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartCreateAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpCreateAccountIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/attachMasterKey:
+    post:
+      summary: Start Attach Master Key operation
+      description: >
+        Start an async Attach Master Key operation. Attaches an externally
+        generated master key using pairing messages.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartAttachMasterKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpAttachMasterKeyIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/registerUser:
+    post:
+      summary: Start Register User operation
+      description: >
+        Start an async Register User operation. Adds a user that can participate
+        in approval workflows.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartRegisterUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpRegisterUserIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/setUserPublicKey:
+    post:
+      summary: Start Set User Public Key operation
+      description: >
+        Start an async Set User Public Key operation. Associates a public key
+        with a registered user.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartSetUserPublicKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpSetUserPublicKeyIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/deleteUser:
+    post:
+      summary: Start Delete User operation
+      description: >
+        Start an async Delete User operation.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartDeleteUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpDeleteUserIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/resetUser:
+    post:
+      summary: Start Reset User operation
+      description: >
+        Start an async Reset User operation. Resets a user's state (e.g. after
+        device loss).
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartResetUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpResetUserIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/updateGroup:
+    post:
+      summary: Start Update Group operation
+      description: >
+        Start an async Update Group operation. Adds or removes users from a
+        named group.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartUpdateGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpUpdateGroupIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/updateRates:
+    post:
+      summary: Start Update Rates operation
+      description: >
+        Start an async Update Rates operation. Sets USD spot rates or min/max
+        bounds for assets used in policy evaluation.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartUpdateRates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpUpdateRatesIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/stake:
+    post:
+      summary: Start Stake operation
+      description: >
+        Start an async Stake operation. Stakes assets to a validator on the
+        specified chain.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartStake
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpStakeIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/unstake:
+    post:
+      summary: Start Unstake operation
+      description: >
+        Start an async Unstake operation. Unstakes from the specified
+        validators.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartUnstake
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpUnstakeIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/genericSigning:
+    post:
+      summary: Start Generic Signing operation
+      description: >
+        Start an async Generic Signing operation. Signs arbitrary data (e.g.
+        personal_sign, typed data).
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartGenericSigning
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpGenericSigningIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/signRawTransaction:
+    post:
+      summary: Start Sign Raw Transaction operation
+      description: >
+        Start an async Sign Raw Transaction operation. Signs a pre-built
+        unsigned transaction without broadcasting it.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartSignRawTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpSignRawTransactionIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/sponsor:
+    post:
+      summary: Start Sponsor operation
+      description: >
+        Start an async Sponsor operation. Sponsors contract calls via EIP-7702
+        authorization.
+
+        Requires `Data` and optionally `EIP7702Authorizations` in the EVM spec.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartSponsor
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpSponsorIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/consolidateFunds:
+    post:
+      summary: Start Consolidate Funds operation
+      description: >
+        Start an async Consolidate Funds operation. Moves funds from a
+        sub-address back to the main address.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartConsolidateFunds
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpConsolidateFundsIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/fundSubaddresses:
+    post:
+      summary: Start Fund Subaddresses operation
+      description: >
+        Start an async Fund Subaddresses operation. Distributes funds from the
+        main address to multiple sub-addresses.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartFundSubaddresses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpFundSubAddressesIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/generateConsolidationData:
+    post:
+      summary: Start Generate Consolidation Data operation
+      description: >
+        Start an async Generate Consolidation Data operation. Computes call data
+        and EIP-7702 authorizations
+
+        needed for a subsequent consolidation transaction.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartGenerateConsolidationData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpGenerateConsolidationDataIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/createBatch:
+    post:
+      summary: Start Create Batch operation
+      description: >
+        Start an async Create Batch operation. Opens a signing batch for a
+        master key; transactions are queued
+
+        until the batch is finished or deleted.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartCreateBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpCreateBatchIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/finishCurrentBatch:
+    post:
+      summary: Start Finish Current Batch operation
+      description: >
+        Start an async Finish Current Batch operation. Closes the open batch and
+        submits partial signatures
+
+        for all queued transactions.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartFinishCurrentBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpFinishCurrentBatchIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/deleteCurrentBatch:
+    post:
+      summary: Start Delete Current Batch operation
+      description: >
+        Start an async Delete Current Batch operation. Discards the open batch
+        without signing.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartDeleteCurrentBatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpDeleteCurrentBatchIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/setErsPublicKey:
+    post:
+      summary: Start Set ERS Public Key operation
+      description: >
+        Start an async Set ERS Public Key operation. Sets the RSA public key
+        (PKIX DER) used for encrypted recovery shares.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartSetErsPublicKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpSetERSPublicKeyIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/createAllocation:
+    post:
+      summary: Start Create Allocation operation
+      description: >
+        Start an async Create Allocation operation. Creates a Canton allocation
+        for a settlement workflow
+
+        with executor, deadlines, and destination amounts.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartCreateAllocation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpAllocationIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/cantonEnrollment:
+    post:
+      summary: Start Canton Enrollment operation
+      description: >
+        Start an async Canton Enrollment operation. Enrolls an external party on
+        the Canton ledger.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartCantonEnrollment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpCantonEnrollmentIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/start/cantonPreapproval:
+    post:
+      summary: Start Canton Preapproval operation
+      description: >
+        Start an async Canton Preapproval operation. Creates a transfer
+        preapproval for a Canton party.
+
+        Status can be queried with [`GET
+        /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
+      operationId: cwpstartCantonPreapproval
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpCantonPreapprovalIntent'
+      responses:
+        '200':
+          description: Operation started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpStartOperationResponse'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/operations/id/{operationID}/status:
     get:
       summary: Get operation status
       operationId: cwpgetOperationStatus
@@ -2345,7 +3162,7 @@ paths:
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/{operationID}/approvalstatus:
+  /api/cwp/operations/id/{operationID}/approvalstatus:
     get:
       summary: Get operation approval status
       operationId: cwpgetOperationApprovalStatus
@@ -2364,7 +3181,7 @@ paths:
           $ref: '#/components/responses/cwpInternalError'
       tags:
         - CWP Operations
-  /api/cwp/operation/{operationID}:
+  /api/cwp/operations/id/{operationID}:
     delete:
       summary: Cancel an operation
       description: >-
@@ -2375,7 +3192,7 @@ paths:
         - $ref: '#/components/parameters/cwpoperationID'
       responses:
         '200':
-          description: Cancelled
+          description: Cancelled. Response body is empty (no JSON payload).
         '404':
           $ref: '#/components/responses/cwpNotFound'
         '409':
@@ -2515,6 +3332,29 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/cwpOperationTypesResponse'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+      tags:
+        - CWP Operations
+  /api/cwp/restrictions/functionNames:
+    get:
+      summary: Names used when filtering transactions by function
+      description: >
+        Returns the names you can use when a transaction restriction should
+        apply only to certain
+
+        kinds of on-chain actions. Call this endpoint whenever you need the
+        current list; it may change
+
+        as the product evolves.
+      operationId: cwpgetRestrictionTransactionFunctionNames
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpTransactionFunctionNamesResponse'
         '500':
           $ref: '#/components/responses/cwpInternalError'
       tags:
@@ -2872,8 +3712,7 @@ components:
       name: operationID
       in: path
       required: true
-      description: |
-        Operation identifier.
+      description: Operation identifier.
       schema:
         type: string
         pattern: ^[a-zA-Z0-9-]{1,96}$
@@ -3160,46 +3999,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/AddressToken'
-        walletConnections:
-          $ref: '#/components/schemas/WalletConnections'
-    AddressList:
-      type: object
-      properties:
-        list:
-          type: array
-          items:
-            $ref: '#/components/schemas/Address'
-        more:
-          $ref: '#/components/schemas/More'
-      required:
-        - list
-        - more
-    AddressPatch:
-      type: object
-      properties:
-        token:
-          $ref: '#/components/schemas/AddressToken'
-        name:
-          type: string
-        dappURIToDisconnectFrom:
-          description: dApp URI to disconnect wallet from
-          type: string
-          example: https://app.uniswap.org
-        walletConnectionPairingURI:
-          description: only used in pairing, not persisted
-          type: string
-          example: >-
-            wc:YOUR_CONNECTION_ID@2?expiryTimestamp=TIMESTAMP&relay-protocol=irn&symKey=YOUR_SYMMETRIC_KEY
-    AddressPost:
-      type: object
-      required:
-        - name
-        - config
-      properties:
-        name:
-          type: string
-        config:
-          $ref: '#/components/schemas/AddressConfig'
     AddressStatus:
       type: object
       properties:
@@ -4552,24 +5351,6 @@ components:
           type: string
         totalRewards:
           $ref: '#/components/schemas/ValidatorReward'
-    WalletConnection:
-      type: object
-      properties:
-        dapp:
-          $ref: '#/components/schemas/Dapp'
-        addressID:
-          type: integer
-          format: int64
-      required:
-        - dapp
-        - addressID
-    WalletConnections:
-      description: |
-        WalletConnections is an array of WalletConnect connections in descending
-        order of creation time.
-      type: array
-      items:
-        $ref: '#/components/schemas/WalletConnection'
     WithdrawalAddress:
       type: string
       description: used to receive staking rewards and returned staked.
@@ -4599,6 +5380,30 @@ components:
         Testnet:
           type: boolean
           description: Whether to use test network.
+    cwpGetAddressCAIP2Request:
+      type: object
+      description: >-
+        Request to get an address for the native asset of a chain identified by
+        CAIP-2.
+      additionalProperties: false
+      required:
+        - MasterKey
+        - CAIP2
+        - Account
+      properties:
+        MasterKey:
+          type: string
+          description: Master key name.
+        CAIP2:
+          type: string
+          description: Chain identifier in CAIP-2 format (e.g., eip155:1, eip155:17000).
+        Account:
+          type: string
+          description: Account name.
+        Index:
+          type: integer
+          description: Address index. Default 0.
+          default: 0
     cwpGetAddressResponse:
       type: object
       required:
@@ -4607,6 +5412,31 @@ components:
         Address:
           type: string
           description: The blockchain address.
+    cwpResolveAddressRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - Address
+      properties:
+        Address:
+          type: string
+          description: The blockchain address to resolve.
+    cwpResolveAddressResponse:
+      type: object
+      required:
+        - MasterKey
+        - Account
+        - Index
+      properties:
+        MasterKey:
+          type: string
+          description: Master key name.
+        Account:
+          type: string
+          description: Account name.
+        Index:
+          type: integer
+          description: Address index within the account.
     cwpAssetInfoFilter:
       type: object
       description: >-
@@ -4627,21 +5457,26 @@ components:
           type: string
           description: Asset symbol (e.g. "BTC", "ETH").
         TestNetwork:
-          type: boolean
-          description: When set, filter by test network status.
+          type:
+            - boolean
+            - 'null'
+          description: >-
+            If `true` or `false`, restrict to that testnet/mainnet flag. Omit
+            the field or send JSON `null` to apply no testnet filter.
     cwpAssetInfo:
       type: object
-      description: Asset information for a registered token.
+      description: >
+        Asset information for a registered token. Search results include only
+        these fields (use `CAIP2` on
+
+        [`AssetInfoFilter`](#/components/schemas/AssetInfoFilter) to filter by
+        chain, not as a response field).
       required:
-        - CAIP2
         - ChainName
         - CAIP19
         - Symbol
         - TestNetwork
       properties:
-        CAIP2:
-          type: string
-          description: Chain ID according to CAIP-2 (e.g. "eip155:1").
         ChainName:
           type: string
           description: Canonical name of the chain (e.g. "Bitcoin Testnet4").
@@ -4654,112 +5489,6 @@ components:
         TestNetwork:
           type: boolean
           description: Whether the chain is a test network.
-    cwpAddCantonTokenIntent:
-      type: object
-      description: Intent to add a Canton token.
-      additionalProperties: false
-      required:
-        - Symbol
-        - Chain
-        - Registrar
-        - InstrumentID
-        - Decimals
-        - Name
-      properties:
-        OperationID:
-          type: string
-          description: Optional. Auto-generated if omitted.
-          pattern: ^[a-zA-Z0-9-]{1,96}$
-        InitiatorID:
-          type: string
-          description: Required when confirmation is enabled.
-        Symbol:
-          type: string
-        Chain:
-          type: string
-        ChainName:
-          type: string
-          description: Canonical name of the chain (e.g. "Canton Testnet").
-        Registrar:
-          type: string
-          description: Token registrar, also used as instrument admin
-        InstrumentID:
-          type: string
-        TestNetwork:
-          type: boolean
-          default: false
-        Decimals:
-          type: integer
-        Name:
-          type: string
-          description: Human-readable token name
-    cwpRegisterTokenIntent:
-      type: object
-      description: Intent to register a token.
-      additionalProperties: false
-      required:
-        - CAIP19
-        - Symbol
-        - Decimals
-      properties:
-        OperationID:
-          type: string
-          description: Optional. Auto-generated if omitted.
-          pattern: ^[a-zA-Z0-9-]{1,96}$
-        InitiatorID:
-          type: string
-          description: Required when confirmation is enabled.
-        CAIP19:
-          type: string
-          description: CAIP-19 asset identifier.
-        Symbol:
-          type: string
-          description: Token symbol.
-        Decimals:
-          type: integer
-          description: Number of decimal places.
-    cwpRegisterCustomChainIntent:
-      type: object
-      description: >
-        Intent to register a custom chain and its native asset.
-
-        The CAIP-2 chain ID and SLIP-44 coin type are derived from the CAIP19
-        (CAIP-19) field.
-
-        The native asset must use the slip44 namespace. The chain family must be
-        known (eip155, bip122, solana, etc.).
-      additionalProperties: false
-      required:
-        - ChainName
-        - CAIP19
-        - NativeAssetSymbol
-      properties:
-        OperationID:
-          type: string
-          description: Optional. Auto-generated if omitted.
-          pattern: ^[a-zA-Z0-9-]{1,96}$
-        InitiatorID:
-          type: string
-          description: Required when confirmation is enabled.
-        ChainName:
-          type: string
-          description: Unique human-readable name for the chain (e.g. "Ethereum Mainnet").
-        TestNet:
-          type: boolean
-          description: Whether this is a test network.
-          default: false
-        CAIP19:
-          type: string
-          description: >-
-            CAIP-19 of the native asset (e.g. "eip155:1/slip44:60"). Chain ID
-            (CAIP-2) and coin type (SLIP-44) are derived from this.
-        NativeAssetSymbol:
-          type: string
-          description: Ticker symbol for the native asset (e.g. "ETH").
-        NativeAssetDecimals:
-          type: integer
-          description: Number of decimal places for the native asset.
-          default: 0
     cwpRegisterKnownChainRequest:
       type: object
       description: Request to register a chain from the built-in chain registry.
@@ -4770,61 +5499,2768 @@ components:
         CAIP2:
           type: string
           description: CAIP-2 chain identifier (e.g. "eip155:1" for Ethereum mainnet).
-    cwpUpdateConfigRestrictionIntent:
+    cwpChain:
+      type: object
+      description: A registered chain row returned by `GET /chains/list`.
+      required:
+        - ChainName
+        - TestNet
+        - CAIP2
+      properties:
+        ChainName:
+          type: string
+          description: Canonical name of the chain.
+        TestNet:
+          type: boolean
+          description: Whether this is a test network.
+        CAIP2:
+          type: string
+          description: CAIP-2 chain identifier.
+    cwpToken:
+      type: object
+      description: A registered token row returned by `GET /tokens/list`.
+      required:
+        - ChainName
+        - Testnet
+        - Symbol
+        - Decimals
+        - CAIP2
+        - CAIP19
+      properties:
+        ChainName:
+          type: string
+        Testnet:
+          type: boolean
+          description: Whether the chain is a test network.
+        Symbol:
+          type: string
+        Decimals:
+          type: integer
+        CAIP2:
+          type: string
+        CAIP19:
+          type: string
+    cwpOperationFilter:
+      type: object
+      description: >
+        Filter for operation search. All fields are optional. Omitting
+        `Statuses` restricts results to operations
+
+        not in `Succeeded` or `Failed`. `OperationTypes` entries are operation
+        type strings;
+
+        see
+        [`OperationTypesResponse`](#/components/schemas/OperationTypesResponse)
+        and `GET /restrictions/optypes/*`.
+      additionalProperties: false
+      properties:
+        OperationIDs:
+          type: array
+          description: If non-empty, only intents for these operation IDs.
+          items:
+            type: string
+        OperationTypes:
+          type: array
+          items:
+            type: string
+        Statuses:
+          type: array
+          description: >-
+            If non-empty, only operations whose status matches one of these
+            values.
+          items:
+            $ref: '#/components/schemas/cwpStatus'
+        Limit:
+          type: integer
+          description: Maximum number of intents to return. Omit or `0` for no limit.
+          minimum: 0
+    cwpListOperationsResult:
+      type: object
+      required:
+        - Intents
+      properties:
+        Intents:
+          type: array
+          items:
+            $ref: '#/components/schemas/cwpIntentItem'
+    cwpAddressSpecSearch:
       type: object
       description: >-
-        Intent to update config restrictions. At least one of Add or Delete must
-        be set; both are allowed.
-      additionalProperties: false
-      anyOf:
-        - required:
-            - Add
-        - required:
-            - Delete
+        Wallet source (master key + account and optional sub-address) or an
+        external destination address.
       properties:
-        OperationID:
+        MasterKeyName:
           type: string
-          description: Optional. Auto-generated if omitted.
-          pattern: ^[a-zA-Z0-9-]{1,96}$
-        InitiatorID:
+          description: >-
+            Required for all sources. For destinations, omit when `Address` is
+            set.
+        AccountName:
           type: string
-          description: Required when confirmation is enabled.
-        Add:
-          $ref: '#/components/schemas/cwpConfigRestriction'
-          description: Optional. Restriction to add.
-        Delete:
-          $ref: '#/components/schemas/cwpConfigRestriction'
-          description: Optional. Restriction to delete.
-    cwpUpdatePolicyRestrictionIntent:
+          description: >-
+            Required for all sources. For destinations, omit when `Address` is
+            set.
+        AddressIndex:
+          type: integer
+          description: Sub-address index within the account; `0` is the main address.
+        Address:
+          type: string
+          description: >-
+            Destination address; use instead of master key, account, and index.
+            Only for destinations; ignored for sources.
+    cwpTxOutputSearch:
       type: object
       description: >-
-        Intent to update policy restrictions. At least one of Add or Delete must
-        be set; both are allowed.
-      additionalProperties: false
-      anyOf:
-        - required:
-            - Add
-        - required:
-            - Delete
+        Transaction output combining destination address fields with a transfer
+        amount.
+      required:
+        - Amount
       properties:
-        OperationID:
+        Amount:
           type: string
-          description: Optional. Auto-generated if omitted.
-          pattern: ^[a-zA-Z0-9-]{1,96}$
+          description: Amount for this output (required).
+        MasterKeyName:
+          type: string
+          description: >-
+            Required for all sources. For destinations, omit when `Address` is
+            set.
+        AccountName:
+          type: string
+          description: >-
+            Required for all sources. For destinations, omit when `Address` is
+            set.
+        AddressIndex:
+          type: integer
+          description: Sub-address index within the account; `0` is the main address.
+        Address:
+          type: string
+          description: >-
+            Destination address; use instead of master key, account, and index.
+            Only for destinations; ignored for sources.
+    cwpAddressIndexAmountSearch:
+      type: object
+      description: Sub-address index with an amount (e.g. funding sub-addresses).
+      properties:
+        Index:
+          type: integer
+          description: Index of the sub-address; resolved to a concrete on-chain address.
+        Amount:
+          type: string
+          description: Amount associated with that sub-address.
+    cwpSubAddressDataSearch:
+      type: object
+      description: >-
+        One asset and sub-address row when consolidating from multiple
+        sub-addresses.
+      properties:
+        Asset:
+          type: string
+          description: Asset symbol for this consolidation row.
+        Amount:
+          type: string
+          description: Amount for this sub-address.
+        SubAddressIndex:
+          type: integer
+          description: Index of the sub-address within the account.
+    cwpExternalPairingMessageSearch:
+      type: object
+      description: Single pairing message when attaching an external master key.
+      properties:
+        Value:
+          type: string
+          format: byte
+          description: Raw pairing message bytes (base64 in JSON).
+    cwpPartialSignaturesSearch:
+      type: object
+      description: Partial signatures for one transaction inside a signing batch.
+      properties:
+        SignaturesForTx:
+          type: array
+          description: >-
+            Partial signature blobs for one transaction (each entry is
+            base64-encoded bytes).
+          items:
+            type: array
+            items:
+              type: string
+              format: byte
+    cwpRateUpdateSearch:
+      type: object
+      description: USD spot rate or min/max bounds for one asset in a rate update.
+      properties:
+        Asset:
+          type: string
+          description: Asset identifier (required).
+        USDRate:
+          type: number
+          format: double
+          description: Fixed USD rate; cannot be combined with min or max bounds.
+        USDMin:
+          type: number
+          format: double
+          description: Minimum allowed USD rate; cannot be combined with `USDRate`.
+        USDMax:
+          type: number
+          format: double
+          description: >-
+            Maximum allowed USD rate; must be ≥ `USDMin` when used; cannot be
+            combined with `USDRate`.
+    cwpPolicyApproverExpressionSearch:
+      type: object
+      description: >-
+        Tree of approver requirements (`and` / `or` / `leaf`) or unconditional
+        `allow` / `block`.
+      properties:
+        Op:
+          type: string
+          description: and, or, leaf, allow, or block.
+        SubExpressions:
+          type: array
+          description: Nested expressions when `Op` is `and` or `or`.
+          items:
+            $ref: '#/components/schemas/cwpPolicyApproverExpressionSearch'
+        Groups:
+          type: array
+          description: >-
+            Group names when `Op` is `leaf`. If empty, a user from any group not
+            otherwise referenced may approve.
+          items:
+            type: string
+        RequiredCount:
+          type: integer
+          description: >-
+            Number of approvers required from `Groups` for a `leaf`. `-1` with
+            non-empty `Groups` means all members of those groups (validated
+            server-side).
+    cwpPolicySetEntrySearch:
+      type: object
+      description: >-
+        One policy row in an update; which fields matter depends on the policy
+        operation type.
+      properties:
+        TriggerGroup:
+          type: string
+          description: Group the rule applies to for all operation types.
+        MinAmount:
+          type: string
+          description: Used for transfer-style rules.
+        AmountCurrency:
+          type: string
+          description: Currency context for amounts and fees.
+        TxCurrencies:
+          type: array
+          description: Allowed transaction currencies for transfer-style rules.
+          items:
+            type: string
+        Sources:
+          type: array
+          description: Allowed source accounts or identifiers for transfer-style rules.
+          items:
+            type: string
+        DestinationType:
+          type: string
+          enum:
+            - internal
+            - external
+          description: Whether destinations are internal accounts or external addresses.
+        Destinations:
+          type: array
+          description: Allowed destinations for transfer-style rules.
+          items:
+            type: string
+        TestNetwork:
+          type:
+            - boolean
+            - 'null'
+          description: Restrict rule to testnet or mainnet when set.
+        ContractAddress:
+          type: string
+          description: Deprecated; ignored for new configurations.
+        PolicyUpdateOpType:
+          type: string
+          description: Operation type this row applies to when updating policies.
+        TargetGroup:
+          type: string
+          description: Group affected for update-group operations.
+        ApproverExpression:
+          description: Who must approve when this row matches.
+          allOf:
+            - $ref: '#/components/schemas/cwpPolicyApproverExpressionSearch'
+        SourceName:
+          type: string
+          description: Named source constraint when applicable.
+        MasterKeyName:
+          type: string
+          description: Master key scope when applicable.
+        MinFee:
+          type: string
+          description: Minimum fee; fee currency is `AmountCurrency`.
+    cwpCodePolicySetEntrySearch:
+      type: object
+      description: Predicate evaluated in code; if true, `ApproverExpression` applies.
+      properties:
+        Code:
+          type: string
+          description: >-
+            Expression that must evaluate to true or false; if true, the entry's
+            approver expression is used.
+        CodeLang:
+          type: string
+          description: Expression language; supported value is `expr`.
+        ApproverExpression:
+          description: Approvers required when `Code` evaluates to true.
+          allOf:
+            - $ref: '#/components/schemas/cwpPolicyApproverExpressionSearch'
+    cwpEVMPropertiesSearch:
+      type: object
+      properties:
+        ChainID:
+          type: integer
+    cwpBitcoinPropertiesSearch:
+      type: object
+      properties:
+        AddressType:
+          type: string
+    cwpSubstratePropertiesSearch:
+      type: object
+      properties:
+        NetworkCode:
+          type: integer
+    cwpSolanaPropertiesSearch:
+      type: object
+      description: Empty placeholder for Solana family properties.
+    cwpTVMPropertiesSearch:
+      type: object
+      description: Empty placeholder for TVM family properties.
+    cwpCantonPropertiesSearch:
+      type: object
+      properties:
+        ProviderID:
+          type: string
+        DelegatePartyID:
+          type: string
+          description: >-
+            Customer hot-key party used as delegate for TransferCommand cold
+            transfers.
+        TransferCommandExpiry:
+          type: integer
+          description: >-
+            How long a TransferCommand remains valid, in nanoseconds (JSON
+            duration encoding). Defaults to 24h if omitted.
+    cwpXLMPropertiesSearch:
+      type: object
+      description: Empty placeholder for Stellar/XLM family properties.
+    cwpFamilyPropertiesAtMostOne:
+      description: >
+        Blockchain-family metadata when registering a custom chain. At most one
+        of `EVMProperties`, `BitcoinProperties`,
+
+        `SubstrateProperties`, `SolanaProperties`, `TVMProperties`,
+        `CantonProperties`, or `XLMProperties` may be set.
+      oneOf:
+        - allOf:
+            - required:
+                - EVMProperties
+            - not:
+                anyOf:
+                  - required:
+                      - BitcoinProperties
+                  - required:
+                      - SubstrateProperties
+                  - required:
+                      - SolanaProperties
+                  - required:
+                      - TVMProperties
+                  - required:
+                      - CantonProperties
+                  - required:
+                      - XLMProperties
+        - allOf:
+            - required:
+                - BitcoinProperties
+            - not:
+                anyOf:
+                  - required:
+                      - EVMProperties
+                  - required:
+                      - SubstrateProperties
+                  - required:
+                      - SolanaProperties
+                  - required:
+                      - TVMProperties
+                  - required:
+                      - CantonProperties
+                  - required:
+                      - XLMProperties
+        - allOf:
+            - required:
+                - SubstrateProperties
+            - not:
+                anyOf:
+                  - required:
+                      - EVMProperties
+                  - required:
+                      - BitcoinProperties
+                  - required:
+                      - SolanaProperties
+                  - required:
+                      - TVMProperties
+                  - required:
+                      - CantonProperties
+                  - required:
+                      - XLMProperties
+        - allOf:
+            - required:
+                - SolanaProperties
+            - not:
+                anyOf:
+                  - required:
+                      - EVMProperties
+                  - required:
+                      - BitcoinProperties
+                  - required:
+                      - SubstrateProperties
+                  - required:
+                      - TVMProperties
+                  - required:
+                      - CantonProperties
+                  - required:
+                      - XLMProperties
+        - allOf:
+            - required:
+                - TVMProperties
+            - not:
+                anyOf:
+                  - required:
+                      - EVMProperties
+                  - required:
+                      - BitcoinProperties
+                  - required:
+                      - SubstrateProperties
+                  - required:
+                      - SolanaProperties
+                  - required:
+                      - CantonProperties
+                  - required:
+                      - XLMProperties
+        - allOf:
+            - required:
+                - CantonProperties
+            - not:
+                anyOf:
+                  - required:
+                      - EVMProperties
+                  - required:
+                      - BitcoinProperties
+                  - required:
+                      - SubstrateProperties
+                  - required:
+                      - SolanaProperties
+                  - required:
+                      - TVMProperties
+                  - required:
+                      - XLMProperties
+        - allOf:
+            - required:
+                - XLMProperties
+            - not:
+                anyOf:
+                  - required:
+                      - EVMProperties
+                  - required:
+                      - BitcoinProperties
+                  - required:
+                      - SubstrateProperties
+                  - required:
+                      - SolanaProperties
+                  - required:
+                      - TVMProperties
+                  - required:
+                      - CantonProperties
+    cwpAddERC20Intent:
+      type: object
+      description: >-
+        Adds an ERC20 token to the wallet platform. (`AddERC20Intent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
         InitiatorID:
           type: string
-          description: Required when confirmation is enabled.
-        Add:
-          $ref: '#/components/schemas/cwpPolicyRestriction'
-          description: Optional. Restriction to add.
-        Delete:
-          $ref: '#/components/schemas/cwpPolicyRestriction'
-          description: Optional. Restriction to delete.
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Address:
+          type: string
+          description: Token contract address.
+        Name:
+          type: string
+          description: Human-readable token name.
+        Symbol:
+          type: string
+        TestNetwork:
+          type: boolean
+        Decimals:
+          type: integer
+        Chain:
+          type: string
+          description: Native symbol of the chain.
+        ChainName:
+          type: string
+        CAIP19:
+          type: string
+          description: CAIP-19 of the chain native asset (not the token).
+    cwpAddSPLTokenIntent:
+      type: object
+      description: >-
+        Adds a Solana SPL token. (`AddSPLTokenIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Address:
+          type: string
+        Symbol:
+          type: string
+        TestNetwork:
+          type: boolean
+        Decimals:
+          type: integer
+        Name:
+          type: string
+        Chain:
+          type: string
+          description: Native symbol of the chain.
+        CAIP19:
+          type: string
+        ChainName:
+          type: string
+    cwpAddCantonTokenIntent:
+      type: object
+      description: >-
+        Adds a Canton token. (`AddCantonTokenIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      required:
+        - Symbol
+        - Chain
+        - Registrar
+        - InstrumentID
+        - Decimals
+        - Name
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Symbol:
+          type: string
+        Chain:
+          type: string
+        ChainName:
+          type: string
+        Registrar:
+          type: string
+          description: Token registrar; also used as instrument admin.
+        InstrumentID:
+          type: string
+        CAIP19:
+          type: string
+        TestNetwork:
+          type: boolean
+        Decimals:
+          type: integer
+        Name:
+          type: string
+    cwpRegisterTokenIntent:
+      type: object
+      description: >-
+        Registers a token by CAIP-19. (`RegisterTokenIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      required:
+        - CAIP19
+        - Symbol
+        - Decimals
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        CAIP19:
+          type: string
+        Symbol:
+          type: string
+        Decimals:
+          type: integer
+    cwpDeleteTokenIntent:
+      type: object
+      description: >-
+        Deletes a token for an asset. (`DeleteTokenIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Symbol:
+          type: string
+        TestNetwork:
+          type: boolean
+        ChainName:
+          type: string
+        CAIP19:
+          type: string
+    cwpAssociateToSPLTokenIntent:
+      allOf:
+        - type: object
+          description: >-
+            Associates a wallet account with an SPL token account.
+            (`AssociateToSPLTokenIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            SPLSymbol:
+              type: string
+            TestNetwork:
+              type: boolean
+            MasterKeyName:
+              type: string
+            Source:
+              type: string
+              description: Source account name.
+            AddressIndex:
+              type: integer
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpAssociateNonceAccountIntent:
+      allOf:
+        - type: object
+          description: >-
+            Associates a nonce account (Solana); only the main account may run
+            this. (`AssociateNonceAccountIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Symbol:
+              type: string
+            TestNetwork:
+              type: boolean
+            MasterKeyName:
+              type: string
+            Source:
+              type: string
+            Authority:
+              $ref: '#/components/schemas/cwpAddressSpecSearch'
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpActivateStellarAddressIntent:
+      allOf:
+        - type: object
+          description: >-
+            Funds and activates a Stellar address.
+            (`ActivateStellarAddressIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Symbol:
+              type: string
+            TestNetwork:
+              type: boolean
+            MasterKeyName:
+              type: string
+              description: Funding account master key.
+            Source:
+              type: string
+              description: Funding account name.
+            Destination:
+              $ref: '#/components/schemas/cwpAddressSpecSearch'
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpBackupMasterKeyIntent:
+      type: object
+      description: >-
+        Backs up a master key. (`BackupMasterKeyIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Name:
+          type: string
+          description: Master key name.
+    cwpCreateMasterKeyIntent:
+      type: object
+      description: >-
+        Creates a master key. (`CreateMasterKeyIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Name:
+          type: string
+          description: Master key name.
+    cwpCreateAccountIntent:
+      type: object
+      description: >-
+        Creates an account on a master key. (`CreateAccountIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Name:
+          type: string
+          description: Account name.
+        MasterKey:
+          type: string
+    cwpTransferIntent:
+      allOf:
+        - type: object
+          description: >-
+            Transfers assets from a source account to destinations.
+            (`TransferIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          required:
+            - Asset
+            - Source
+            - MasterKeyName
+            - DestinationType
+            - DestinationAmounts
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Asset:
+              type: string
+            TestNetwork:
+              type: boolean
+            Source:
+              type: string
+            MasterKeyName:
+              type: string
+            DestinationType:
+              type: string
+              enum:
+                - internal
+                - external
+            DestinationAmounts:
+              type: array
+              items:
+                $ref: '#/components/schemas/cwpDestinationAmount'
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpStakeIntent:
+      allOf:
+        - type: object
+          description: >-
+            Stakes assets to a validator. (`StakeIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Asset:
+              type: string
+            TestNetwork:
+              type: boolean
+            Source:
+              type: string
+            MasterKeyName:
+              type: string
+            Amount:
+              type: string
+            WithdrawalAddress:
+              type: string
+            WithdrawalAddressType:
+              type: string
+              enum:
+                - internal
+                - external
+            MaxFee:
+              type: string
+            FeeRecipient:
+              type: string
+            FeeRecipientType:
+              type: string
+              enum:
+                - internal
+                - external
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpUnstakeIntent:
+      type: object
+      description: >-
+        Unstakes from given validators. (`UnstakeIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        ChainName:
+          type: string
+        CAIP19:
+          type: string
+        Asset:
+          type: string
+        TestNetwork:
+          type: boolean
+        Account:
+          type: string
+        MasterKeyName:
+          type: string
+        ValidatorAddresses:
+          type: array
+          items:
+            type: string
+    cwpRegisterUserIntent:
+      type: object
+      description: >-
+        Registers a user. (`RegisterUserIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        UserID:
+          type: string
+        UserName:
+          type: string
+    cwpSetUserPublicKeyIntent:
+      type: object
+      description: >-
+        Sets a user's public key. (`SetUserPublicKeyIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        UserID:
+          type: string
+        PublicKey:
+          type: string
+          format: byte
+    cwpDeleteUserIntent:
+      type: object
+      description: >-
+        Deletes a user. (`DeleteUserIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        UserID:
+          type: string
+        UserName:
+          type: string
+    cwpResetUserIntent:
+      type: object
+      description: >-
+        Resets a user. (`ResetUserIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        UserID:
+          type: string
+        UserName:
+          type: string
+    cwpUpdateGroupIntent:
+      type: object
+      description: >-
+        Updates group membership. (`UpdateGroupIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Group:
+          type: string
+        AddUsers:
+          type: array
+          items:
+            type: string
+        RemoveUsers:
+          type: array
+          items:
+            type: string
+    cwpUpdatePolicySetIntent:
+      type: object
+      description: >-
+        Updates policy configuration. (`UpdatePolicySetIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        PolicyOperationType:
+          type: string
+        SkipConfirmation:
+          type: boolean
+        Policies:
+          type: array
+          items:
+            $ref: '#/components/schemas/cwpPolicySetEntrySearch'
+        CodeEntries:
+          type: array
+          items:
+            $ref: '#/components/schemas/cwpCodePolicySetEntrySearch'
+    cwpUpdateRatesIntent:
+      type: object
+      description: >-
+        Updates asset USD rates. (`UpdateRatesIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Updates:
+          type: array
+          items:
+            $ref: '#/components/schemas/cwpRateUpdateSearch'
+    cwpAttachMasterKeyIntent:
+      type: object
+      description: >-
+        Attaches an external master key using pairing messages.
+        (`AttachMasterKeyIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Name:
+          type: string
+        ExternalPairingMessages:
+          type: array
+          items:
+            $ref: '#/components/schemas/cwpExternalPairingMessageSearch'
+        PairingChecksum:
+          type: string
+    cwpCreateBatchIntent:
+      type: object
+      description: >-
+        Creates a signing batch for a master key. (`CreateBatchIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        MasterKey:
+          type: string
+        SignerSet:
+          type: string
+    cwpFinishCurrentBatchIntent:
+      type: object
+      description: >-
+        Finishes the current batch with partial signatures.
+        (`FinishCurrentBatchIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        MasterKey:
+          type: string
+        SignedBatch:
+          type: array
+          items:
+            $ref: '#/components/schemas/cwpPartialSignaturesSearch'
+    cwpDeleteCurrentBatchIntent:
+      type: object
+      description: >-
+        Deletes the current batch for a master key.
+        (`DeleteCurrentBatchIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        MasterKey:
+          type: string
+    cwpCallContractIntent:
+      allOf:
+        - type: object
+          description: >-
+            Calls a smart contract. (`CallContractIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Asset:
+              type: string
+            TestNetwork:
+              type: boolean
+            Call:
+              type: string
+              description: Call data (e.g. hex-encoded for EVM).
+            Source:
+              type: string
+            MasterKeyName:
+              type: string
+            ContractAddress:
+              type: string
+            Amount:
+              type: string
+            MaxFee:
+              type: string
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpDeployContractIntent:
+      allOf:
+        - type: object
+          description: >-
+            Deploys a smart contract. (`DeployContractIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Asset:
+              type: string
+            TestNetwork:
+              type: boolean
+            ContractCode:
+              type: string
+            Source:
+              type: string
+            MasterKeyName:
+              type: string
+            Amount:
+              type: string
+            MaxFee:
+              type: string
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpGenericSigningIntent:
+      type: object
+      description: >-
+        Signs arbitrary data. (`GenericSigningIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        ChainName:
+          type: string
+        CAIP19:
+          type: string
+        Asset:
+          type: string
+        TestNetwork:
+          type: boolean
+        DataToSign:
+          type: string
+        TypeOfSigning:
+          type: string
+        Source:
+          type: string
+        MasterKeyName:
+          type: string
+    cwpConsolidateFundsIntent:
+      allOf:
+        - type: object
+          description: >-
+            Consolidates funds from a sub-address to the main address.
+            (`ConsolidateFundsIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Asset:
+              type: string
+            TestNetwork:
+              type: boolean
+            MasterKeyName:
+              type: string
+            Account:
+              type: string
+            SubAddressIndex:
+              type: integer
+            Amount:
+              type: string
+            MaxFee:
+              type: string
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpFundSubAddressesIntent:
+      allOf:
+        - type: object
+          description: >-
+            Funds multiple sub-addresses from the main address.
+            (`FundSubAddressesIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Asset:
+              type: string
+            TestNetwork:
+              type: boolean
+            MasterKeyName:
+              type: string
+            Account:
+              type: string
+            SubAddressesFunding:
+              type: array
+              items:
+                $ref: '#/components/schemas/cwpAddressIndexAmountSearch'
+            MaxFee:
+              type: string
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpRegisterCustomChainIntent:
+      type: object
+      description: >-
+        Registers a custom chain and native asset; CAIP-2 is derived from
+        CAIP-19. (`RegisterCustomChainIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      required:
+        - ChainName
+        - CAIP19
+        - NativeAssetSymbol
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        ChainName:
+          type: string
+        TestNet:
+          type: boolean
+        CAIP19:
+          type: string
+        NativeAssetSymbol:
+          type: string
+        NativeAssetDecimals:
+          type: integer
+    cwpRegisterBlockchainNetworkIntent:
+      allOf:
+        - type: object
+          description: >-
+            Registers a blockchain network and native asset metadata.
+            (`RegisterBlockchainNetworkIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            NativeSymbol:
+              type: string
+            TestNetwork:
+              type: boolean
+            ProtocolName:
+              type: string
+            NetworkName:
+              type: string
+            MainnetCoinType:
+              type: integer
+            Decimals:
+              type: integer
+            EVMProperties:
+              $ref: '#/components/schemas/cwpEVMPropertiesSearch'
+            BitcoinProperties:
+              $ref: '#/components/schemas/cwpBitcoinPropertiesSearch'
+            SubstrateProperties:
+              $ref: '#/components/schemas/cwpSubstratePropertiesSearch'
+            SolanaProperties:
+              $ref: '#/components/schemas/cwpSolanaPropertiesSearch'
+            TVMProperties:
+              $ref: '#/components/schemas/cwpTVMPropertiesSearch'
+            CantonProperties:
+              $ref: '#/components/schemas/cwpCantonPropertiesSearch'
+            XLMProperties:
+              $ref: '#/components/schemas/cwpXLMPropertiesSearch'
+        - $ref: '#/components/schemas/cwpFamilyPropertiesAtMostOne'
+    cwpUnregisterBlockchainNetworkIntent:
+      type: object
+      description: >-
+        Unregisters a blockchain network. (`UnregisterBlockchainNetworkIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        NativeSymbol:
+          type: string
+        TestNetwork:
+          type: boolean
+        ChainName:
+          type: string
+        CAIP19:
+          type: string
+    cwpSetERSPublicKeyIntent:
+      type: object
+      description: >-
+        Sets the ERS RSA public key (PKIX DER). (`SetERSPublicKeyIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Key:
+          type: string
+          format: byte
+    cwpTransactionIntent:
+      allOf:
+        - type: object
+          description: >-
+            Builds and signs a transaction from source and destinations
+            (experimental). (`TransactionIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          required:
+            - Asset
+            - Source
+            - Destination
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Asset:
+              type: string
+            TestNetwork:
+              type: boolean
+            Source:
+              $ref: '#/components/schemas/cwpAddressSpecSearch'
+            Destination:
+              type: array
+              items:
+                $ref: '#/components/schemas/cwpTxOutputSearch'
+            RawTransaction:
+              type: string
+            DecodedRawTransaction:
+              type: string
+              description: >-
+                Stable human-readable representation derived from
+                `RawTransaction`; populated by the server for supported chains.
+            TxHash:
+              type: string
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpSponsorIntent:
+      allOf:
+        - type: object
+          description: >-
+            Sponsors contract calls (EIP-7702); requires EVMSpec Data and
+            authorizations as applicable. (`SponsorIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Asset:
+              type: string
+            TestNetwork:
+              type: boolean
+            MasterKeyName:
+              type: string
+            Account:
+              type: string
+            ContractAddress:
+              type: string
+              description: Target contract; empty means code-reset.
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpGenerateConsolidationDataIntent:
+      type: object
+      description: >-
+        Generates consolidation transaction data for sub-addresses.
+        (`GenerateConsolidationDataIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        ChainName:
+          type: string
+        CAIP19:
+          type: string
+        Asset:
+          type: string
+        TestNetwork:
+          type: boolean
+        MasterKeyName:
+          type: string
+        Account:
+          type: string
+        SubAddressData:
+          type: array
+          items:
+            $ref: '#/components/schemas/cwpSubAddressDataSearch'
+    cwpSignRawTransactionIntent:
+      type: object
+      description: >-
+        Signs a raw unsigned transaction without broadcasting.
+        (`SignRawTransactionIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        ChainName:
+          type: string
+        CAIP19:
+          type: string
+        Asset:
+          type: string
+        TestNetwork:
+          type: boolean
+        Source:
+          type: string
+        MasterKeyName:
+          type: string
+        RawTransaction:
+          type: string
+        TxHash:
+          type: string
+    cwpAllocationIntent:
+      allOf:
+        - type: object
+          description: >-
+            Creates a Canton allocation (settlement workflow).
+            (`AllocationIntent`).
+
+
+            Common fields on every stored intent: the kind of operation
+            (`OperationType`), parameters in the
+
+            operation-specific intent object, and shared metadata. For `POST
+            /operations/start/{operationType}`, omit
+
+            `OperationType`, `Timestamp`, and `InitiatorName` (the server
+            rejects them if set). `OperationID` and
+
+            `InitiatorID` may be set when applicable. List/search responses
+            include these fields when present.
+          additionalProperties: false
+          properties:
+            InitiatorID:
+              type: string
+              description: Initiator identifier; may be supplied on start when applicable.
+            InitiatorName:
+              type: string
+              description: Initiator display name; not accepted from HTTP start requests.
+            OperationType:
+              type: string
+              description: Type of operation and intent variant for this request.
+            OperationID:
+              type: string
+              description: >-
+                Optional caller-chosen unique id for the operation so the client
+                knows the id in advance.
+            Timestamp:
+              type: string
+              format: date-time
+              description: Time associated with the stored intent (set by the server).
+            ChainName:
+              type: string
+            CAIP19:
+              type: string
+            Asset:
+              type: string
+            TestNetwork:
+              type: boolean
+            Source:
+              type: string
+            MasterKeyName:
+              type: string
+            DestinationType:
+              type: string
+              enum:
+                - internal
+                - external
+            DestinationAmounts:
+              type: array
+              items:
+                $ref: '#/components/schemas/cwpDestinationAmount'
+            ExecutorID:
+              $ref: '#/components/schemas/cwpAddressSpecSearch'
+            AllocationDeadline:
+              type: string
+              format: date-time
+            SettlementDeadline:
+              type: string
+              format: date-time
+            EVM:
+              $ref: '#/components/schemas/cwpEVMSpec'
+            Bitcoin:
+              $ref: '#/components/schemas/cwpBitcoinSpec'
+            Substrate:
+              $ref: '#/components/schemas/cwpSubstrateSpec'
+            Solana:
+              $ref: '#/components/schemas/cwpSolanaSpec'
+            Canton:
+              $ref: '#/components/schemas/cwpCantonSpec'
+            Stellar:
+              $ref: '#/components/schemas/cwpStellarSpec'
+            TVM:
+              $ref: '#/components/schemas/cwpTVMSpec'
+        - $ref: '#/components/schemas/cwpBlockchainSpecAtMostOne'
+    cwpCantonEnrollmentIntent:
+      type: object
+      description: >-
+        Enrolls an external party on the Canton ledger.
+        (`CantonEnrollmentIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        ChainName:
+          type: string
+        CAIP19:
+          type: string
+        Asset:
+          type: string
+        TestNetwork:
+          type: boolean
+        Source:
+          $ref: '#/components/schemas/cwpAddressSpecSearch'
+    cwpCantonPreapprovalIntent:
+      type: object
+      description: >-
+        Creates a transfer preapproval for a Canton party.
+        (`CantonPreapprovalIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        ChainName:
+          type: string
+        CAIP19:
+          type: string
+        Asset:
+          type: string
+        TestNetwork:
+          type: boolean
+        Source:
+          $ref: '#/components/schemas/cwpAddressSpecSearch'
     cwpUpdateTransactionRestrictionIntent:
       type: object
       description: >-
-        Intent to update transaction restrictions. At least one of Add or Delete
-        must be set; both are allowed.
+        Adds or removes transaction restrictions.
+        (`UpdateTransactionRestrictionIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
       additionalProperties: false
       anyOf:
         - required:
@@ -4832,19 +8268,170 @@ components:
         - required:
             - Delete
       properties:
-        OperationID:
-          type: string
-          description: Optional. Auto-generated if omitted.
-          pattern: ^[a-zA-Z0-9-]{1,96}$
         InitiatorID:
           type: string
-          description: Required when confirmation is enabled.
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
         Add:
           $ref: '#/components/schemas/cwpTransactionRestriction'
-          description: Optional. Restriction to add.
         Delete:
           $ref: '#/components/schemas/cwpTransactionRestriction'
-          description: Optional. Restriction to delete.
+    cwpUpdateConfigRestrictionIntent:
+      type: object
+      description: >-
+        Adds or removes config restrictions. (`UpdateConfigRestrictionIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      anyOf:
+        - required:
+            - Add
+        - required:
+            - Delete
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Add:
+          $ref: '#/components/schemas/cwpConfigRestriction'
+        Delete:
+          $ref: '#/components/schemas/cwpConfigRestriction'
+    cwpUpdatePolicyRestrictionIntent:
+      type: object
+      description: >-
+        Adds or removes policy restrictions. (`UpdatePolicyRestrictionIntent`).
+
+
+        Common fields on every stored intent: the kind of operation
+        (`OperationType`), parameters in the
+
+        operation-specific intent object, and shared metadata. For `POST
+        /operations/start/{operationType}`, omit
+
+        `OperationType`, `Timestamp`, and `InitiatorName` (the server rejects
+        them if set). `OperationID` and
+
+        `InitiatorID` may be set when applicable. List/search responses include
+        these fields when present.
+      additionalProperties: false
+      anyOf:
+        - required:
+            - Add
+        - required:
+            - Delete
+      properties:
+        InitiatorID:
+          type: string
+          description: Initiator identifier; may be supplied on start when applicable.
+        InitiatorName:
+          type: string
+          description: Initiator display name; not accepted from HTTP start requests.
+        OperationType:
+          type: string
+          description: Type of operation and intent variant for this request.
+        OperationID:
+          type: string
+          description: >-
+            Optional caller-chosen unique id for the operation so the client
+            knows the id in advance.
+        Timestamp:
+          type: string
+          format: date-time
+          description: Time associated with the stored intent (set by the server).
+        Add:
+          $ref: '#/components/schemas/cwpPolicyRestriction'
+        Delete:
+          $ref: '#/components/schemas/cwpPolicyRestriction'
+    cwpIntentItem:
+      description: >-
+        Union of intent JSON objects in `ListOperationsResult.Intents`. Same
+        component schemas as `POST /operations/start/{operationType}` request
+        bodies (e.g. `TransferIntent`, `TransactionIntent`).
+      oneOf:
+        - $ref: '#/components/schemas/cwpAddERC20Intent'
+        - $ref: '#/components/schemas/cwpAddSPLTokenIntent'
+        - $ref: '#/components/schemas/cwpAddCantonTokenIntent'
+        - $ref: '#/components/schemas/cwpRegisterTokenIntent'
+        - $ref: '#/components/schemas/cwpDeleteTokenIntent'
+        - $ref: '#/components/schemas/cwpAssociateToSPLTokenIntent'
+        - $ref: '#/components/schemas/cwpAssociateNonceAccountIntent'
+        - $ref: '#/components/schemas/cwpActivateStellarAddressIntent'
+        - $ref: '#/components/schemas/cwpBackupMasterKeyIntent'
+        - $ref: '#/components/schemas/cwpCreateMasterKeyIntent'
+        - $ref: '#/components/schemas/cwpCreateAccountIntent'
+        - $ref: '#/components/schemas/cwpTransferIntent'
+        - $ref: '#/components/schemas/cwpStakeIntent'
+        - $ref: '#/components/schemas/cwpUnstakeIntent'
+        - $ref: '#/components/schemas/cwpRegisterUserIntent'
+        - $ref: '#/components/schemas/cwpSetUserPublicKeyIntent'
+        - $ref: '#/components/schemas/cwpDeleteUserIntent'
+        - $ref: '#/components/schemas/cwpResetUserIntent'
+        - $ref: '#/components/schemas/cwpUpdateGroupIntent'
+        - $ref: '#/components/schemas/cwpUpdatePolicySetIntent'
+        - $ref: '#/components/schemas/cwpUpdateRatesIntent'
+        - $ref: '#/components/schemas/cwpAttachMasterKeyIntent'
+        - $ref: '#/components/schemas/cwpCreateBatchIntent'
+        - $ref: '#/components/schemas/cwpFinishCurrentBatchIntent'
+        - $ref: '#/components/schemas/cwpDeleteCurrentBatchIntent'
+        - $ref: '#/components/schemas/cwpCallContractIntent'
+        - $ref: '#/components/schemas/cwpDeployContractIntent'
+        - $ref: '#/components/schemas/cwpGenericSigningIntent'
+        - $ref: '#/components/schemas/cwpConsolidateFundsIntent'
+        - $ref: '#/components/schemas/cwpFundSubAddressesIntent'
+        - $ref: '#/components/schemas/cwpRegisterCustomChainIntent'
+        - $ref: '#/components/schemas/cwpRegisterBlockchainNetworkIntent'
+        - $ref: '#/components/schemas/cwpUnregisterBlockchainNetworkIntent'
+        - $ref: '#/components/schemas/cwpSetERSPublicKeyIntent'
+        - $ref: '#/components/schemas/cwpTransactionIntent'
+        - $ref: '#/components/schemas/cwpSponsorIntent'
+        - $ref: '#/components/schemas/cwpGenerateConsolidationDataIntent'
+        - $ref: '#/components/schemas/cwpSignRawTransactionIntent'
+        - $ref: '#/components/schemas/cwpAllocationIntent'
+        - $ref: '#/components/schemas/cwpCantonEnrollmentIntent'
+        - $ref: '#/components/schemas/cwpCantonPreapprovalIntent'
+        - $ref: '#/components/schemas/cwpUpdateTransactionRestrictionIntent'
+        - $ref: '#/components/schemas/cwpUpdateConfigRestrictionIntent'
+        - $ref: '#/components/schemas/cwpUpdatePolicyRestrictionIntent'
     cwpEVMSpec:
       type: object
       description: Optional EVM-specific parameters.
@@ -4918,6 +8505,16 @@ components:
           properties:
             MintAddress:
               type: string
+        AssociateNonceAccount:
+          type: object
+          description: Parameters for associating a nonce account.
+          properties:
+            PayerAddress:
+              type: string
+            NonceAccount:
+              type: string
+            Authority:
+              type: string
         SPLTokenTransfer:
           type: object
           properties:
@@ -4929,6 +8526,11 @@ components:
               type: string
             decimals:
               type: integer
+        NonceAccount:
+          type: object
+          properties:
+            NonceAccount:
+              type: string
     cwpCantonSpec:
       type: object
       description: Optional Canton-specific parameters.
@@ -4940,6 +8542,9 @@ components:
           properties:
             SettlementExecutorID:
               type: object
+              description: >-
+                Executor party as master key / account / address (see
+                AddressSpec).
               properties:
                 MasterKeyName:
                   type: string
@@ -4955,6 +8560,13 @@ components:
             SettlementDeadline:
               type: string
               format: date-time
+        AllocationChoice:
+          type: object
+          properties:
+            ContractID:
+              type: string
+            Choice:
+              type: string
         InvokeTokenChoice:
           type: object
           properties:
@@ -4969,6 +8581,13 @@ components:
               type: string
             Amount:
               type: string
+        TokenInformation:
+          type: object
+          properties:
+            InstrumentAdmin:
+              type: string
+            InstrumentID:
+              type: string
         Enrollment:
           type: object
           properties:
@@ -4976,15 +8595,89 @@ components:
               type: string
             PublicKey:
               type: string
-              format: byte
+              description: >-
+                Hex-encoded raw Ed25519 public key bytes for topology
+                transactions.
         Preapproval:
           type: object
           properties:
             PartyID:
               type: string
-            ProviderID:
-              type: string
             DSOID:
+              type: string
+        UseTransferCommand:
+          type: boolean
+          description: >-
+            When true, use the TransferCommand cold-transfer path instead of the
+            round-dependent TransferFactory.
+        TransferCommand:
+          type: object
+          properties:
+            DelegatePartyID:
+              type: string
+            ExpiresAt:
+              type: string
+              format: date-time
+            Nonce:
+              type: integer
+              format: int64
+        Clawback:
+          type: object
+          properties:
+            InstrumentConfiguration:
+              type: string
+            ReceiverDelegationCID:
+              type: string
+              nullable: true
+            ClawbackAmount:
+              type: string
+            InputHoldingCIDs:
+              type: array
+              items:
+                type: string
+        FreezePositions:
+          type: object
+          properties:
+            RegistrarServiceCID:
+              type: string
+            CredentialCIDs:
+              type: array
+              items:
+                type: string
+            DenyListCIDs:
+              type: array
+              items:
+                type: string
+            FreezeID:
+              type: string
+            Reason:
+              type: string
+            InstrumentConfigurationCID:
+              type: string
+        UnfreezePositions:
+          type: object
+          properties:
+            RegistrarServiceCID:
+              type: string
+            CredentialCIDs:
+              type: array
+              items:
+                type: string
+            DenyListCIDs:
+              type: array
+              items:
+                type: string
+            InstrumentConfigurationCID:
+              type: string
+        PauseInstrument:
+          type: object
+          properties:
+            InstrumentConfigurationCID:
+              type: string
+        UnpauseInstrument:
+          type: object
+          properties:
+            InstrumentConfigurationCID:
               type: string
     cwpStellarSpec:
       type: object
@@ -5009,6 +8702,143 @@ components:
     cwpTVMSpec:
       type: object
       description: Optional TVM-specific parameters.
+    cwpBlockchainSpecAtMostOne:
+      oneOf:
+        - not:
+            anyOf:
+              - required:
+                  - EVM
+              - required:
+                  - Bitcoin
+              - required:
+                  - Substrate
+              - required:
+                  - Solana
+              - required:
+                  - Canton
+              - required:
+                  - Stellar
+              - required:
+                  - TVM
+        - allOf:
+            - required:
+                - EVM
+            - not:
+                anyOf:
+                  - required:
+                      - Bitcoin
+                  - required:
+                      - Substrate
+                  - required:
+                      - Solana
+                  - required:
+                      - Canton
+                  - required:
+                      - Stellar
+                  - required:
+                      - TVM
+        - allOf:
+            - required:
+                - Bitcoin
+            - not:
+                anyOf:
+                  - required:
+                      - EVM
+                  - required:
+                      - Substrate
+                  - required:
+                      - Solana
+                  - required:
+                      - Canton
+                  - required:
+                      - Stellar
+                  - required:
+                      - TVM
+        - allOf:
+            - required:
+                - Substrate
+            - not:
+                anyOf:
+                  - required:
+                      - EVM
+                  - required:
+                      - Bitcoin
+                  - required:
+                      - Solana
+                  - required:
+                      - Canton
+                  - required:
+                      - Stellar
+                  - required:
+                      - TVM
+        - allOf:
+            - required:
+                - Solana
+            - not:
+                anyOf:
+                  - required:
+                      - EVM
+                  - required:
+                      - Bitcoin
+                  - required:
+                      - Substrate
+                  - required:
+                      - Canton
+                  - required:
+                      - Stellar
+                  - required:
+                      - TVM
+        - allOf:
+            - required:
+                - Canton
+            - not:
+                anyOf:
+                  - required:
+                      - EVM
+                  - required:
+                      - Bitcoin
+                  - required:
+                      - Substrate
+                  - required:
+                      - Solana
+                  - required:
+                      - Stellar
+                  - required:
+                      - TVM
+        - allOf:
+            - required:
+                - Stellar
+            - not:
+                anyOf:
+                  - required:
+                      - EVM
+                  - required:
+                      - Bitcoin
+                  - required:
+                      - Substrate
+                  - required:
+                      - Solana
+                  - required:
+                      - Canton
+                  - required:
+                      - TVM
+        - allOf:
+            - required:
+                - TVM
+            - not:
+                anyOf:
+                  - required:
+                      - EVM
+                  - required:
+                      - Bitcoin
+                  - required:
+                      - Substrate
+                  - required:
+                      - Solana
+                  - required:
+                      - Canton
+                  - required:
+                      - Stellar
     cwpDestinationAmount:
       type: object
       description: >-
@@ -5031,464 +8861,6 @@ components:
         Amount:
           type: string
           description: Amount to transfer.
-    cwpTransferIntent:
-      type: object
-      description: >
-        Intent to transfer assets from a source account to one or more
-        destinations.
-
-        For internal transfers specify DestinationType "internal" and use
-        Destination as vault name with MasterKeyName in each DestinationAmount.
-
-        For external transfers specify DestinationType "external" and use
-        Destination as blockchain address.
-
-        Optional blockchain-specific fields: EVM, Bitcoin, Substrate, Solana,
-        Canton, Stellar, TVM. At most one can be set.
-      additionalProperties: false
-      required:
-        - Asset
-        - Source
-        - MasterKeyName
-        - DestinationType
-        - DestinationAmounts
-      properties:
-        OperationID:
-          type: string
-          description: Optional. Auto-generated if omitted.
-          pattern: ^[a-zA-Z0-9-]{1,96}$
-        InitiatorID:
-          type: string
-          description: Required when confirmation is enabled.
-        ChainName:
-          type: string
-          description: Canonical name of the chain (e.g. "Bitcoin Testnet4").
-        CAIP19:
-          type: string
-          description: Asset type according to CAIP-19 (e.g. "eip155:1/slip44:60").
-        Asset:
-          type: string
-          description: Asset symbol (e.g., BTC, ETH, SOL).
-        TestNetwork:
-          type: boolean
-          default: false
-          description: Whether to use testnet.
-        Source:
-          type: string
-          description: Name of source account.
-        MasterKeyName:
-          type: string
-          description: Master key name for the source account.
-        DestinationType:
-          type: string
-          enum:
-            - internal
-            - external
-          description: |
-            internal - transfer to another wallet account (vault).
-            external - transfer to blockchain address.
-        DestinationAmounts:
-          type: array
-          description: >
-            For UTXO-based blockchains, a transaction output is generated for
-            each amount.
-
-            For account-based blockchains and internal transfers, this list must
-            have length 1.
-          minItems: 1
-          items:
-            $ref: '#/components/schemas/cwpDestinationAmount'
-        EVM:
-          $ref: '#/components/schemas/cwpEVMSpec'
-        Bitcoin:
-          $ref: '#/components/schemas/cwpBitcoinSpec'
-        Substrate:
-          $ref: '#/components/schemas/cwpSubstrateSpec'
-        Solana:
-          $ref: '#/components/schemas/cwpSolanaSpec'
-        Canton:
-          $ref: '#/components/schemas/cwpCantonSpec'
-        Stellar:
-          $ref: '#/components/schemas/cwpStellarSpec'
-        TVM:
-          $ref: '#/components/schemas/cwpTVMSpec'
-      oneOf:
-        - not:
-            anyOf:
-              - required:
-                  - EVM
-              - required:
-                  - Bitcoin
-              - required:
-                  - Substrate
-              - required:
-                  - Solana
-              - required:
-                  - Canton
-              - required:
-                  - Stellar
-              - required:
-                  - TVM
-        - allOf:
-            - required:
-                - EVM
-            - not:
-                anyOf:
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Substrate
-                  - required:
-                      - Solana
-                  - required:
-                      - Canton
-                  - required:
-                      - Stellar
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - Bitcoin
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Substrate
-                  - required:
-                      - Solana
-                  - required:
-                      - Canton
-                  - required:
-                      - Stellar
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - Substrate
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Solana
-                  - required:
-                      - Canton
-                  - required:
-                      - Stellar
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - Solana
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Substrate
-                  - required:
-                      - Canton
-                  - required:
-                      - Stellar
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - Canton
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Substrate
-                  - required:
-                      - Solana
-                  - required:
-                      - Stellar
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - Stellar
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Substrate
-                  - required:
-                      - Solana
-                  - required:
-                      - Canton
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - TVM
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Substrate
-                  - required:
-                      - Solana
-                  - required:
-                      - Canton
-                  - required:
-                      - Stellar
-    cwpTransactionIntent:
-      type: object
-      description: >
-        Intent to make a transaction. Specifies source, destinations, and
-        amounts.
-
-        For internal destinations use MasterKeyName and AccountName. For
-        external destinations use Address.
-
-        Optional blockchain-specific fields: EVM, Bitcoin, Substrate, Solana,
-        Canton, Stellar, TVM. At most one can be set.
-      additionalProperties: false
-      required:
-        - Asset
-        - Source
-        - Destination
-      properties:
-        OperationID:
-          type: string
-          description: Optional. Auto-generated if omitted.
-          pattern: ^[a-zA-Z0-9-]{1,96}$
-        InitiatorID:
-          type: string
-          description: Required when confirmation is enabled.
-        ChainName:
-          type: string
-          description: Canonical name of the chain (e.g. "Bitcoin Testnet4").
-        CAIP19:
-          type: string
-          description: Asset type according to CAIP-19 (e.g. "eip155:1/slip44:60").
-        Asset:
-          type: string
-          description: Asset symbol (e.g., BTC, ETH, SOL).
-        TestNetwork:
-          type: boolean
-          default: false
-          description: Whether to use testnet.
-        Source:
-          type: object
-          description: Source account. MasterKeyName and AccountName identify the account.
-          required:
-            - MasterKeyName
-            - AccountName
-          properties:
-            MasterKeyName:
-              type: string
-              description: Master key name.
-            AccountName:
-              type: string
-              description: Account name.
-            AddressIndex:
-              type: integer
-              description: Subaddress index (0 for main address).
-        Destination:
-          type: array
-          description: >
-            Transaction outputs. For internal transfers specify MasterKeyName
-            and AccountName.
-
-            For external transfers specify Address.
-          minItems: 1
-          items:
-            type: object
-            required:
-              - Amount
-            properties:
-              Amount:
-                type: string
-                description: Amount to send.
-              MasterKeyName:
-                type: string
-                description: For internal destination. Master key name.
-              AccountName:
-                type: string
-                description: For internal destination. Account name.
-              AddressIndex:
-                type: integer
-                description: For internal destination. Subaddress index.
-              Address:
-                type: string
-                description: For external destination. Blockchain address.
-        RawTransaction:
-          type: string
-          description: >-
-            Optional unsigned transaction (blockchain-encoded). Used with TxHash
-            for precomputed signing.
-        TxHash:
-          type: string
-          description: >-
-            Precomputed hash of tx to be signed. Requires RawTransaction when
-            specified.
-        EVM:
-          $ref: '#/components/schemas/cwpEVMSpec'
-        Bitcoin:
-          $ref: '#/components/schemas/cwpBitcoinSpec'
-        Substrate:
-          $ref: '#/components/schemas/cwpSubstrateSpec'
-        Solana:
-          $ref: '#/components/schemas/cwpSolanaSpec'
-        Canton:
-          $ref: '#/components/schemas/cwpCantonSpec'
-        Stellar:
-          $ref: '#/components/schemas/cwpStellarSpec'
-        TVM:
-          $ref: '#/components/schemas/cwpTVMSpec'
-      oneOf:
-        - not:
-            anyOf:
-              - required:
-                  - EVM
-              - required:
-                  - Bitcoin
-              - required:
-                  - Substrate
-              - required:
-                  - Solana
-              - required:
-                  - Canton
-              - required:
-                  - Stellar
-              - required:
-                  - TVM
-        - allOf:
-            - required:
-                - EVM
-            - not:
-                anyOf:
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Substrate
-                  - required:
-                      - Solana
-                  - required:
-                      - Canton
-                  - required:
-                      - Stellar
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - Bitcoin
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Substrate
-                  - required:
-                      - Solana
-                  - required:
-                      - Canton
-                  - required:
-                      - Stellar
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - Substrate
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Solana
-                  - required:
-                      - Canton
-                  - required:
-                      - Stellar
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - Solana
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Substrate
-                  - required:
-                      - Canton
-                  - required:
-                      - Stellar
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - Canton
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Substrate
-                  - required:
-                      - Solana
-                  - required:
-                      - Stellar
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - Stellar
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Substrate
-                  - required:
-                      - Solana
-                  - required:
-                      - Canton
-                  - required:
-                      - TVM
-        - allOf:
-            - required:
-                - TVM
-            - not:
-                anyOf:
-                  - required:
-                      - EVM
-                  - required:
-                      - Bitcoin
-                  - required:
-                      - Substrate
-                  - required:
-                      - Solana
-                  - required:
-                      - Canton
-                  - required:
-                      - Stellar
     cwpStartOperationResponse:
       type: object
       required:
@@ -5718,8 +9090,13 @@ components:
     cwpOperationTypesResponse:
       type: array
       description: >-
-        List of operation type identifiers (e.g., "add canton token", "update
-        config restriction").
+        List of operation type strings. Same values as elsewhere in this API;
+        see `GET /restrictions/optypes/*` for category-specific subsets.
+      items:
+        type: string
+    cwpTransactionFunctionNamesResponse:
+      type: array
+      description: List of names for filtering transactions by function.
       items:
         type: string
     cwpTransactionRestriction:
@@ -5746,9 +9123,9 @@ components:
         Destination:
           $ref: '#/components/schemas/cwpValueFilterDestination'
         ExternalDestination:
-          $ref: '#/components/schemas/cwpValueFilterString'
-          description: |
-            A non-null empty filter matches any external destination.
+          description: A non-null empty filter matches any external destination.
+          allOf:
+            - $ref: '#/components/schemas/cwpValueFilterString'
         TransactionFunction:
           $ref: '#/components/schemas/cwpValueFilterTransactionFunction'
         TestNetwork:
@@ -5816,16 +9193,6 @@ components:
           description: Match if no listed value matches.
           items:
             $ref: '#/components/schemas/cwpDestination'
-    cwpTransactionFunctionName:
-      type: string
-      enum:
-        - mint
-        - burn
-        - canton_freeze
-        - canton_unfreeze
-        - canton_pause
-        - canton_unpause
-      description: Transaction function for transaction restriction filtering.
     cwpValueFilterTransactionFunction:
       type: object
       description: >
@@ -5836,17 +9203,19 @@ components:
         value matches (denylist).
 
         If both lists are empty, the filter matches any value.
+
+        Use names from `GET /restrictions/functionNames`.
       properties:
         Only:
           type: array
           description: Match if any listed value matches.
           items:
-            $ref: '#/components/schemas/cwpTransactionFunctionName'
+            type: string
         Except:
           type: array
           description: Match if no listed value matches.
           items:
-            $ref: '#/components/schemas/cwpTransactionFunctionName'
+            type: string
     cwpAmountFilter:
       type: object
       description: Amount comparison filter. Currency is required when Above is non-zero.
@@ -6059,7 +9428,7 @@ components:
           schema:
             $ref: '#/components/schemas/cwpErrorResponse'
     cwpNotFound:
-      description: Resource not found (operation or tenant)
+      description: Unknown operation ID.
       content:
         application/json:
           schema:

@@ -1,22 +1,25 @@
+import { randomUUID } from 'crypto';
 import {
-  AccountsService,
-  AddressesService,
   CwpOperationsService,
   OpenAPI,
-  Protocol,
   type cwpTransactionIntent,
   type cwpOperationStatus,
   cwpStatus,
 } from './iv-sdk-typescript';
+import type { WalletSDKImpl as WalletSDKType } from '@canton-network/wallet-sdk';
+import type { PrepareSubmissionResponse } from '@canton-network/core-ledger-client';
 
 declare const process: any;
-declare const require: any;
 declare const module: any;
 
 // Canton party IDs (set via env or hardcode for your deployment)
-const SOURCE_PARTY_ID = 'bd::12200a90bb3a4f4578e221d141c9b256ce2d6cf50692849fb22d8074b1a6751771e6';
-const DESTINATION_PARTY_ID = 'bd::1220fc745217e708a58999ee756e6ca21680b68eabfeb7f62e192739b8dac3860b1a';
+const SOURCE_ADDRESS = 'bd::1220517ebe84583a41cc0edad72dc824028b05683659d48e8d6ed273d73b252a6462';
+const DESTINATION_ADDRESS = 'bd::12205659285192975fa3b056496bb030966f214ab8db7b814dc1d348523c57656494';
+// Canton asset identifiers for CC (Amulet)
+const CANTON_CAIP19 = 'canton:devnet/slip44:6767';
+const CANTON_CAIP2 = 'canton:devnet';
 const TRANSFER_AMOUNT = '1';
+const DEFAULT_MASTER_KEY_NAME = 'Default';
 
 // Canton wallet SDK validator / ledger configuration
 const VALIDATOR_URL = (typeof process !== 'undefined' && process.env?.VALIDATOR_URL) || 'http://localhost:2000/api/validator';
@@ -32,79 +35,27 @@ const CANTON_AUTH_AUDIENCE = (typeof process !== 'undefined' && process.env?.CAN
 // IV API configuration
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://americas-sales-team-1.api.blockdaemon-wallet.com';
 OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
-const DEFAULT_MASTER_KEY_NAME = 'Default';
-
-// Canton asset identifiers for CC (Amulet)
-const CANTON_ASSET = 'CC';
-const CANTON_CAIP19 = 'canton:devnet/slip44:6767';
-
 
 // ---------------------------------------------------------------------------
-// Step 1: Resolve a Canton PartyID to IV MasterKeyName + AccountName
+// Canton wallet SDK: create and connect a reusable SDK instance
 // ---------------------------------------------------------------------------
 
-interface ResolvedAddress {
-  masterKeyName: string;
-  accountName: string;
-  addressIndex: number;
+function jwtSub(token: string): string {
+  const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+  if (!payload.sub) throw new Error('JWT missing sub claim');
+  return payload.sub as string;
 }
 
-async function resolvePartyViaV2(partyId: string): Promise<ResolvedAddress> {
-  const addressList = await AddressesService.listAddresses() as any;
-  const addresses: any[] = addressList?.list || [];
-
-  let matchedAddress: any = null;
-  for (const addr of addresses) {
-    const config = addr.config || addr;
-    if (
-      config.address === partyId &&
-      (config.protocol === 'canton' || config.protocol === Protocol.CANTON)
-    ) {
-      matchedAddress = addr;
-      break;
-    }
-  }
-
-  if (!matchedAddress) {
-    throw new Error(`No Canton address matching party ID "${partyId}" found in IV`);
-  }
-
-  const accountId: number = matchedAddress.config?.accountID ?? matchedAddress.accountID;
-  const account = await AccountsService.getAccount(accountId) as any;
-  const accountName: string = account?.metadata?.name ?? account?.name;
-  if (!accountName) {
-    throw new Error(`Could not determine account name for accountID=${accountId}`);
-  }
-
-  return {
-    masterKeyName: DEFAULT_MASTER_KEY_NAME,
-    accountName,
-    addressIndex: 0,
-  };
-}
-
-// ---------------------------------------------------------------------------
-// Step 2: Use the Canton wallet SDK to prepare the transfer transaction
-// ---------------------------------------------------------------------------
-
-async function prepareCantonTransfer(params: {
-  senderPartyId: string;
-  recipientPartyId: string;
-  amount: string;
-}): Promise<{ preparedTransaction: string; preparedTransactionHash: string }> {
+async function createCantonSDK(partyId: string): Promise<WalletSDKType> {
   const {
     WalletSDKImpl,
     ClientCredentialOAuthController,
     UnsafeAuthController,
+    LedgerController,
+    TokenStandardController,
   } = await import('@canton-network/wallet-sdk');
 
   const sdk = new WalletSDKImpl();
-
-  function jwtSub(token: string): string {
-    const payload = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
-    if (!payload.sub) throw new Error('JWT missing sub claim');
-    return payload.sub as string;
-  }
 
   const isUnsafeAuth = CANTON_AUTH_ISSUER === 'unsafe-auth';
   if (isUnsafeAuth) {
@@ -126,57 +77,53 @@ async function prepareCantonTransfer(params: {
     inner.audience = CANTON_AUTH_AUDIENCE;
     inner.scope = 'daml_ledger_api';
 
-    // Wrap so the SDK uses the JWT `sub` as userId (what the participant knows)
-    // rather than the OAuth client_id
     const auth = {
       getUserToken: async () => {
         const ctx = await inner.getUserToken();
-        const sub = jwtSub(ctx.accessToken);
-        return { userId: sub, accessToken: ctx.accessToken };
+        return { userId: jwtSub(ctx.accessToken), accessToken: ctx.accessToken };
       },
       getAdminToken: async () => {
         const ctx = await inner.getAdminToken();
-        const sub = jwtSub(ctx.accessToken);
-        return { userId: sub, accessToken: ctx.accessToken };
+        return { userId: jwtSub(ctx.accessToken), accessToken: ctx.accessToken };
       },
     };
     sdk.configure({ authFactory: () => auth as any });
   }
 
   sdk.configure({
-    ledgerFactory: (userId: string, authTokenProvider: any, isAdmin: boolean) => {
-      const { LedgerController } = require('@canton-network/wallet-sdk');
-      return new LedgerController(userId, new URL(LEDGER_CLIENT_URL), undefined, isAdmin, authTokenProvider);
-    },
-    tokenStandardFactory: (userId: string, authTokenProvider: any, isAdmin: boolean) => {
-      const { TokenStandardController } = require('@canton-network/wallet-sdk');
-      return new TokenStandardController(
-        userId,
-        new URL(LEDGER_CLIENT_URL),
-        new URL(VALIDATOR_URL),
-        undefined,
-        authTokenProvider,
-        isAdmin,
-      );
-    },
+    ledgerFactory: (userId: string, authTokenProvider: any, isAdmin: boolean) =>
+      new LedgerController(userId, new URL(LEDGER_CLIENT_URL), undefined, isAdmin, authTokenProvider),
+    tokenStandardFactory: (userId: string, authTokenProvider: any, isAdmin: boolean) =>
+      new TokenStandardController(userId, new URL(LEDGER_CLIENT_URL), new URL(VALIDATOR_URL), undefined, authTokenProvider, isAdmin),
   });
 
   await sdk.connect();
-  await sdk.setPartyId(params.senderPartyId);
-
-  // Amulet/CC uses the scan proxy for transfer factory registry (REGISTRY_URL is for utility tokens only)
+  await sdk.setPartyId(partyId);
   sdk.tokenStandard!.setTransferFactoryRegistryUrl(new URL(`${SCAN_PROXY_URL}/v0/scan-proxy`));
 
+  return sdk;
+}
+
+// ---------------------------------------------------------------------------
+// Step 1: Prepare the Canton transfer transaction via the wallet SDK
+// ---------------------------------------------------------------------------
+
+async function prepareCantonTransfer(
+  sdk: WalletSDKType,
+  params: { senderAddress: string; recipientAddress: string; amount: string },
+): Promise<{ prepared: PrepareSubmissionResponse; submissionId: string }> {
+  const submissionId = randomUUID();
+
   const [transferCommand, disclosedContracts] = await sdk.tokenStandard!.createTransfer(
-    params.senderPartyId,
-    params.recipientPartyId,
+    params.senderAddress,
+    params.recipientAddress,
     params.amount,
     { instrumentId: 'Amulet' },
   );
 
   const prepared = await sdk.userLedger!.prepareSubmission(
     transferCommand,
-    undefined,
+    submissionId,
     disclosedContracts,
   );
 
@@ -184,38 +131,24 @@ async function prepareCantonTransfer(params: {
     throw new Error('Ledger prepare did not return preparedTransaction or hash');
   }
 
-  return {
-    preparedTransaction: prepared.preparedTransaction,
-    preparedTransactionHash: prepared.preparedTransactionHash,
-  };
+  return { prepared, submissionId };
 }
 
 // ---------------------------------------------------------------------------
-// Step 3: Submit to IV via CWP /operations/start/makeTransaction
+// Step 2: Submit to IV via CWP /operations/start/makeTransaction
 // ---------------------------------------------------------------------------
 
 async function submitMakeTransaction(params: {
-  source: ResolvedAddress;
-  destinationAddress: string;
-  amount: string;
+  sourceAddress: string;
   rawTransaction: string;
   txHash: string;
 }): Promise<string> {
   const intent: cwpTransactionIntent = {
     InitiatorID: 'gmay@blockdaemon.com',
-    Asset: CANTON_ASSET,
     CAIP19: CANTON_CAIP19,
     Source: {
-      MasterKeyName: params.source.masterKeyName,
-      AccountName: params.source.accountName,
-      AddressIndex: params.source.addressIndex,
+      Address: params.sourceAddress,
     },
-    Destination: [
-      {
-        Address: params.destinationAddress,
-        Amount: params.amount,
-      },
-    ],
     RawTransaction: params.rawTransaction,
     TxHash: params.txHash,
   };
@@ -227,10 +160,10 @@ async function submitMakeTransaction(params: {
 }
 
 // ---------------------------------------------------------------------------
-// Step 4: Poll CWP operation status via IV SDK
+// Step 3: Poll CWP operation status until MPC signing completes
 // ---------------------------------------------------------------------------
 
-async function waitForOperation(operationId: string): Promise<{ signedTransaction?: string } | null> {
+async function waitForOperation(operationId: string): Promise<{ signature?: string } | null> {
   console.log('  Polling operation status...');
 
   const maxAttempts = 60;
@@ -240,7 +173,7 @@ async function waitForOperation(operationId: string): Promise<{ signedTransactio
       console.log(`  [${i + 1}/${maxAttempts}] status=${op.Status}`);
 
       if (op.Status === cwpStatus.SUCCEEDED) {
-        return { signedTransaction: op.Result?.Transaction?.SignedTransaction };
+        return { signature: op.Result?.Transaction?.SignedTransaction };
       }
       if (op.Status === cwpStatus.FAILED) {
         console.error('  Operation failed:', op.ErrorDetails);
@@ -257,65 +190,131 @@ async function waitForOperation(operationId: string): Promise<{ signedTransactio
 }
 
 // ---------------------------------------------------------------------------
+// Step 4: Fetch the Ed25519 public key from IV Canton Signing API
+// ---------------------------------------------------------------------------
+
+async function getCantonPublicKeyForParty(partyId: string): Promise<string> {
+  const url = `${OpenAPI.BASE}/api/cwp/canton/getKeys`;
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(OpenAPI.TOKEN ? { Authorization: `Bearer ${OpenAPI.TOKEN}` } : {}),
+    },
+    body: JSON.stringify({ masterKey: DEFAULT_MASTER_KEY_NAME, caip2: CANTON_CAIP2 }),
+  });
+
+  if (!resp.ok) {
+    throw new Error(`getKeys failed: ${resp.status} ${await resp.text()}`);
+  }
+
+  const keys: Array<{ id: string; name: string; publicKey: string }> = await resp.json();
+  if (!keys.length) {
+    throw new Error('getKeys returned no keys');
+  }
+
+  // A Canton partyId has the form `<hint>::<namespace>` where `namespace` is the
+  // fingerprint of the party's public key. Match each IV key's fingerprint to
+  // the partyId's namespace to pick the right one when IV returns multiple keys.
+  const namespaceIdx = partyId.indexOf('::');
+  if (namespaceIdx < 0) {
+    throw new Error(`invalid partyId (missing '::'): ${partyId}`);
+  }
+  const namespace = partyId.slice(namespaceIdx + 2);
+
+  const { TopologyController } = await import('@canton-network/wallet-sdk');
+  for (const key of keys) {
+    const fingerprint = TopologyController.createFingerprintFromPublicKey(key.publicKey);
+    if (fingerprint === namespace) {
+      console.log(`  Matched key account=${key.name} fingerprint=${fingerprint}`);
+      return key.publicKey;
+    }
+  }
+
+  throw new Error(
+    `no IV key matches partyId namespace ${namespace}; got ${keys.length} key(s): ${keys.map(k => k.name).join(', ')}`,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Step 5: Execute the signed transaction on the Canton ledger
+// ---------------------------------------------------------------------------
+
+async function executeCantonTransaction(
+  sdk: WalletSDKType,
+  prepared: PrepareSubmissionResponse,
+  signature: string,
+  publicKey: string,
+  submissionId: string,
+): Promise<void> {
+  const completion = await sdk.userLedger!.executeSubmissionAndWaitFor(
+    prepared,
+    signature,
+    publicKey,
+    submissionId,
+    30_000,
+  );
+  console.log('  Ledger completion:', JSON.stringify(completion, null, 2));
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 async function main() {
-  if (!SOURCE_PARTY_ID || !DESTINATION_PARTY_ID) {
-    console.error('Set SOURCE_PARTY_ID and DESTINATION_PARTY_ID environment variables');
+  if (!SOURCE_ADDRESS || !DESTINATION_ADDRESS) {
+    console.error('Set SOURCE_ADDRESS and DESTINATION_ADDRESS environment variables');
     if (typeof process !== 'undefined') process.exit(1);
     return;
   }
 
   console.log('Canton CC raw-transaction transfer via IV');
-  console.log(`  Source party:      ${SOURCE_PARTY_ID}`);
-  console.log(`  Destination party: ${DESTINATION_PARTY_ID}`);
-  console.log(`  Amount:            ${TRANSFER_AMOUNT} CC`);
+  console.log(`  Source party:      ${SOURCE_ADDRESS}`);
+  console.log(`  Destination party: ${DESTINATION_ADDRESS}`);
+  console.log(`  Amount:            ${TRANSFER_AMOUNT} CC\n`);
+
+  // 0. Connect the Canton wallet SDK (reused for prepare + execute)
+  console.log('Connecting Canton wallet SDK...');
+  const sdk = await createCantonSDK(SOURCE_ADDRESS);
   console.log('');
 
-  // 1. Resolve source party to IV MasterKey / Account
-  console.log('Step 1: Resolving source party in IV...');
-  const source = await resolvePartyViaV2(SOURCE_PARTY_ID);
-  console.log(`  MasterKeyName: ${source.masterKeyName}`);
-  console.log(`  AccountName:   ${source.accountName}`);
-  console.log(`  AddressIndex:  ${source.addressIndex}`);
-  console.log('');
-
-  // 2. Prepare the Canton transfer via the Canton wallet SDK
-  console.log('Step 2: Preparing Canton transfer with wallet SDK...');
-  const { preparedTransaction, preparedTransactionHash } = await prepareCantonTransfer({
-    senderPartyId: SOURCE_PARTY_ID,
-    recipientPartyId: DESTINATION_PARTY_ID,
+  // 1. Prepare the Canton transfer via the wallet SDK
+  console.log('Step 1: Preparing Canton transfer with wallet SDK...');
+  const { prepared, submissionId } = await prepareCantonTransfer(sdk, {
+    senderAddress: SOURCE_ADDRESS,
+    recipientAddress: DESTINATION_ADDRESS,
     amount: TRANSFER_AMOUNT,
   });
-  console.log(`  preparedTransaction length: ${preparedTransaction.length} chars (base64)`);
-  console.log(`  preparedTransactionHash:    ${preparedTransactionHash}`);
-  console.log('');
+  console.log(`  preparedTransaction length: ${prepared.preparedTransaction!.length} chars (base64)`);
+  console.log(`  preparedTransactionHash:    ${prepared.preparedTransactionHash}`);
+  console.log(`  submissionId:               ${submissionId}\n`);
 
-  // 3. Submit to IV CWP makeTransaction with the base64 RawTransaction
-  console.log('Step 3: Submitting makeTransaction to IV...');
+  // 2. Submit to IV CWP makeTransaction with the base64 RawTransaction
+  console.log('Step 2: Submitting makeTransaction to IV...');
   const operationId = await submitMakeTransaction({
-    source,
-    destinationAddress: DESTINATION_PARTY_ID,
-    amount: TRANSFER_AMOUNT,
-    rawTransaction: preparedTransaction,
-    txHash: preparedTransactionHash,
+    sourceAddress: SOURCE_ADDRESS,
+    rawTransaction: prepared.preparedTransaction!,
+    txHash: prepared.preparedTransactionHash,
   });
-  console.log(`  OperationID: ${operationId}`);
-  console.log('');
+  console.log(`  OperationID: ${operationId}\n`);
 
-  // 4. Poll for completion
-  console.log('Step 4: Waiting for MPC signing...');
+  // 3. Poll IV for MPC signing completion
+  console.log('Step 3: Waiting for MPC signing...');
   const result = await waitForOperation(operationId);
-  if (!result) {
-    throw new Error('Operation did not complete successfully');
+  if (!result?.signature) {
+    throw new Error('Operation did not return a signature');
   }
+  console.log(`  Signature (base64): ${result.signature}\n`);
 
-  console.log('');
-  console.log('Done.');
-  if (result.signedTransaction) {
-    console.log(`  Signature (base64): ${result.signedTransaction}`);
-  }
+  // 4. Fetch the Ed25519 public key from IV (match by partyId namespace)
+  console.log('Step 4: Fetching Canton public key from IV...');
+  const publicKey = await getCantonPublicKeyForParty(SOURCE_ADDRESS);
+  console.log(`  PublicKey (base64): ${publicKey}\n`);
+
+  // 5. Execute the signed transaction on the Canton ledger
+  console.log('Step 5: Executing signed transaction on Canton ledger...');
+  await executeCantonTransaction(sdk, prepared, result.signature, publicKey, submissionId);
+  console.log('\nDone. Transfer submitted to Canton ledger.');
 }
 
 if (typeof require !== 'undefined' && require.main === module) {
