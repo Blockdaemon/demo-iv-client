@@ -1,7 +1,7 @@
 {
   "name": "eth-vault-client",
   "version": "1.0.0",
-  "description": "StakeWise ETH vault deposit client using Institutional Vault SDK",
+  "description": "Institutional Vault SDK demo client",
   "main": "main.ts",
   "scripts": {
     "start": "tsx main.ts",
@@ -10,6 +10,7 @@
     "check": "tsx --check main.ts"
   },
   "dependencies": {
+    "@canton-network/wallet-sdk": "^0.21.1",
     "axios": "^1.12.2",
     "viem": "^2.37.4"
   },
