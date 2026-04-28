@@ -29,7 +29,7 @@ const ASSET_ID = 12; // HOODI
 const MINT_AMOUNT = '40';
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.IV_API_KEY);
 
 const HOODI_RPC = 'https://ethereum-hoodi-rpc.publicnode.com';
 

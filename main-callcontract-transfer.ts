@@ -19,7 +19,7 @@ const ASSET_ID = 12; // ETH
 const WITHDRAW_AMOUNT = '50000000000000000000'; // BD1404 token
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY) || '';
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.IV_API_KEY) || '';
 
 function createTransferCalldata(receiverAddress: string): string {
   try {

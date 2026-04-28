@@ -10,7 +10,7 @@
     "check": "tsx --check main.ts"
   },
   "dependencies": {
-    "@canton-network/wallet-sdk": "^0.21.1",
+    "@canton-network/wallet-sdk": "^1.0.0",
     "axios": "^1.12.2",
     "viem": "^2.37.4"
   },

@@ -21,7 +21,7 @@ const ASSET_ID = 12; // ETH
 const WITHDRAW_AMOUNT = '0.5';
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://americas-sales-team-1.api.blockdaemon-wallet.com';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.IV_API_KEY);
 
 async function findAccountByWalletAddress(walletAddress: string, assetID: number): Promise<{account: Account, matchedAsset: AccountAsset, matchedAddress: Address}> {  
   const response = await AccountsService.listAccounts();

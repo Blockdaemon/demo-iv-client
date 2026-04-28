@@ -27,7 +27,7 @@ const CONTRACT_ADDRESS = '0x036cbd53842c5426634e7929541ec2318f3dcf7e';
 const BURN_AMOUNT = '3';
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.IV_API_KEY);
 
 const BASE_SEPOLIA_RPC = 'https://base-sepolia-rpc.publicnode.com';
 

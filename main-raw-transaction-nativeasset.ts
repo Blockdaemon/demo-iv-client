@@ -27,7 +27,7 @@ const RECEIVER_ADDRESS = '0x9E5ABB1E0c681bEAEF3DC853f83ABF8328DbDF41';
 const WITHDRAW_AMOUNT = '0.00001';
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://americas-sales-team-1.api.blockdaemon-wallet.com';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.IV_API_KEY);
 
 async function buildUnsignedEthTransferHex(params: {
   fromAddress: `0x${string}`;

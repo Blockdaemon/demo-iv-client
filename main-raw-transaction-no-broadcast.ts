@@ -27,7 +27,7 @@ const CONCURRENCY = 15;
 const DURATION_MS = 120_000;
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://americas-sales-team-1.api.blockdaemon-wallet.com';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.IV_API_KEY);
 
 let cachedUnsignedHex: Hex | null = null;
 

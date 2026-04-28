@@ -34,7 +34,7 @@ const WITHDRAW_AMOUNT = '0.00001';
 
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://americas-sales-team-1.api.blockdaemon-wallet.com';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.IV_API_KEY);
 
 function buildErc20TransferCalldata(receiverAddress: `0x${string}`, amount: string): Hex {
   const abi = parseAbi(['function transfer(address to, uint256 amount)']);

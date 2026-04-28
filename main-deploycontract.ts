@@ -18,7 +18,7 @@ const CONTRACT_BYTECODE = '0x608060405234801561000f575f5ffd5b5033604051806040016
 const ASSET_ID = 12; // HOODI
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.IV_API_KEY);
 
 
 async function createTransfer(calldata: string, fromAddress: string): Promise<any> {

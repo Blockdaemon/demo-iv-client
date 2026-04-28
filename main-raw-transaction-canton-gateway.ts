@@ -1,10 +1,4 @@
-import {
-  CwpOperationsService,
-  OpenAPI,
-  type cwpTransactionIntent,
-  type cwpOperationStatus,
-  cwpStatus,
-} from './iv-sdk-typescript';
+import { OpenAPI } from './iv-sdk-typescript';
 import { SDK, type TokenProviderConfig } from '@canton-network/wallet-sdk';
 
 declare const process: any;
@@ -16,8 +10,9 @@ function env(key: string, fallback?: string): string {
 
 const SOURCE_ADDRESS = 'bd::1220cb5a435acd08ab6712521dee6c43c94e41004c4faaf75c1854ad0cc2e82650b2';
 const DESTINATION_ADDRESS = 'bd::12200a47bff4dbfc146024b7ee1af3f164ce54ea18a5d05d386582878b072f823d2d';
-const CANTON_CAIP19 = 'canton:devnet/slip44:6767';
+const CANTON_CAIP2 = 'canton:devnet';
 const TRANSFER_AMOUNT = '1';
+const DEFAULT_MASTER_KEY_NAME = 'Default';
 const INITIATOR_ID = 'gmay@blockdaemon.com';
 
 type CantonSDK = Awaited<ReturnType<typeof createCantonSDK>>;
@@ -77,7 +72,6 @@ async function prepareCantonTransfer(
     throw new Error('Ledger prepare did not return preparedTransaction or hash');
   }
 
-  // Keep the raw prepare response for fromSignature() later
   const prepareResponse = await prepared.preparedPromise;
 
   return {
@@ -88,49 +82,127 @@ async function prepareCantonTransfer(
 }
 
 // ---------------------------------------------------------------------------
-// Step 2: Submit to IV via CWP /operations/start/makeTransaction
+// Step 2: Fetch the Ed25519 public key from IV Canton Signing API
 // ---------------------------------------------------------------------------
 
-async function submitMakeTransaction(params: {
-  sourceAddress: string;
-  rawTransaction: string;
-  txHash: string;
-}): Promise<string> {
-  const intent: cwpTransactionIntent = {
-    InitiatorID: INITIATOR_ID,
-    CAIP19: CANTON_CAIP19,
-    Source: {
-      Address: params.sourceAddress,
+async function getCantonPublicKeyForParty(sdk: CantonSDK, partyId: string): Promise<string> {
+  const baseUrl = OpenAPI.BASE;
+  const resp = await fetch(`${baseUrl}/api/cwp/canton/getKeys`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(OpenAPI.TOKEN ? { Authorization: `Bearer ${OpenAPI.TOKEN}` } : {}),
     },
-    RawTransaction: params.rawTransaction,
-    TxHash: params.txHash,
-  };
+    body: JSON.stringify({ masterKey: DEFAULT_MASTER_KEY_NAME, caip2: CANTON_CAIP2 }),
+  });
 
-  console.log('  Request body:', JSON.stringify(intent, null, 2));
+  if (!resp.ok) {
+    throw new Error(`getKeys failed: ${resp.status} ${await resp.text()}`);
+  }
 
-  const resp = await CwpOperationsService.cwpstartMakeTransaction(intent);
-  return resp.OperationID;
+  const keys: Array<{ id: string; name: string; publicKey: string }> = await resp.json();
+  if (!keys.length) {
+    throw new Error('getKeys returned no keys');
+  }
+
+  const namespaceIdx = partyId.indexOf('::');
+  if (namespaceIdx < 0) {
+    throw new Error(`invalid partyId (missing '::'): ${partyId}`);
+  }
+  const namespace = partyId.slice(namespaceIdx + 2);
+
+  for (const key of keys) {
+    const fingerprint = await sdk.keys.fingerprint(key.publicKey);
+    if (fingerprint === namespace) {
+      console.log(`  Matched key account=${key.name} fingerprint=${fingerprint}`);
+      return key.publicKey;
+    }
+  }
+
+  throw new Error(
+    `no IV key matches partyId namespace ${namespace}; got ${keys.length} key(s): ${keys.map(k => k.name).join(', ')}`,
+  );
 }
 
 // ---------------------------------------------------------------------------
-// Step 3: Poll CWP operation status until MPC signing completes
+// Step 3: Submit to MPA Canton signing API
 // ---------------------------------------------------------------------------
 
-async function waitForOperation(operationId: string): Promise<{ signature?: string } | null> {
-  console.log('  Polling operation status...');
+async function signCantonTransaction(params: {
+  tx: string;
+  txHash: string;
+  publicKey: string;
+}): Promise<string> {
+  const url = `${OpenAPI.BASE}/api/cwp/canton/signTransaction`;
+  const body = {
+    masterKey: DEFAULT_MASTER_KEY_NAME,
+    caip2: CANTON_CAIP2,
+    tx: params.tx,
+    txHash: params.txHash,
+    keyIdentifier: { publicKey: params.publicKey },
+    userIdentifier: INITIATOR_ID,
+  };
+
+  console.log('  Request body:', JSON.stringify(body, null, 2));
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(OpenAPI.TOKEN ? { Authorization: `Bearer ${OpenAPI.TOKEN}` } : {}),
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!resp.ok) {
+    throw new Error(`signTransaction failed: ${resp.status} ${await resp.text()}`);
+  }
+
+  const result = await resp.json();
+  if (result.error) {
+    throw new Error(`signTransaction error: ${result.error} — ${result.error_description}`);
+  }
+
+  return result.txId as string;
+}
+
+// ---------------------------------------------------------------------------
+// Step 4: Poll MPA getTransaction until signing completes
+// ---------------------------------------------------------------------------
+
+async function waitForSignature(txId: string): Promise<{ signature?: string } | null> {
+  console.log('  Polling transaction status...');
+  const url = `${OpenAPI.BASE}/api/cwp/canton/getTransaction`;
 
   const maxAttempts = 60;
   for (let i = 0; i < maxAttempts; i++) {
     try {
-      const op: cwpOperationStatus = await CwpOperationsService.cwpgetOperationStatus(operationId);
-      console.log(`  [${i + 1}/${maxAttempts}] status=${op.Status}`);
+      const resp = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(OpenAPI.TOKEN ? { Authorization: `Bearer ${OpenAPI.TOKEN}` } : {}),
+        },
+        body: JSON.stringify({ txId }),
+      });
 
-      if (op.Status === cwpStatus.SUCCEEDED) {
-        return { signature: op.Result?.Transaction?.SignedTransaction };
-      }
-      if (op.Status === cwpStatus.FAILED) {
-        console.error('  Operation failed:', op.ErrorDetails);
-        return null;
+      if (!resp.ok) {
+        console.error(`  Poll HTTP error (attempt ${i + 1}): ${resp.status}`);
+      } else {
+        const tx = await resp.json();
+        console.log(`  [${i + 1}/${maxAttempts}] status=${tx.status}`);
+
+        if (tx.error) {
+          console.error('  Transaction error:', tx.error_description);
+          return null;
+        }
+        if (tx.status === 'signed') {
+          return { signature: tx.signature };
+        }
+        if (tx.status === 'rejected' || tx.status === 'failed') {
+          console.error('  Transaction signing failed with status:', tx.status);
+          return null;
+        }
       }
     } catch (err: any) {
       console.error(`  Poll error (attempt ${i + 1}):`, err.message || err);
@@ -138,12 +210,12 @@ async function waitForOperation(operationId: string): Promise<{ signature?: stri
     await new Promise(r => setTimeout(r, 1000));
   }
 
-  console.error('  Timeout waiting for operation');
+  console.error('  Timeout waiting for signature');
   return null;
 }
 
 // ---------------------------------------------------------------------------
-// Step 4: Execute the signed transaction on the Canton ledger
+// Step 5: Execute the signed transaction on the Canton ledger
 // ---------------------------------------------------------------------------
 
 async function executeCantonTransaction(
@@ -171,7 +243,7 @@ async function main() {
     return;
   }
 
-  console.log('Canton CC raw-transaction transfer via IV');
+  console.log('Canton CC raw-transaction transfer via IV (Canton Signing API)');
   console.log(`  Source party:      ${SOURCE_ADDRESS}`);
   console.log(`  Destination party: ${DESTINATION_ADDRESS}`);
   console.log(`  Amount:            ${TRANSFER_AMOUNT} CC\n`);
@@ -192,25 +264,30 @@ async function main() {
   console.log(`  preparedTransaction length: ${preparedTransaction.length} chars (base64)`);
   console.log(`  preparedTransactionHash:    ${preparedTransactionHash}\n`);
 
-  // 2. Submit to IV CWP makeTransaction with the base64 RawTransaction
-  console.log('Step 2: Submitting makeTransaction to IV...');
-  const operationId = await submitMakeTransaction({
-    sourceAddress: SOURCE_ADDRESS,
-    rawTransaction: preparedTransaction,
-    txHash: preparedTransactionHash,
-  });
-  console.log(`  OperationID: ${operationId}\n`);
+  // 2. Fetch the Ed25519 public key from IV (needed for signTransaction keyIdentifier)
+  console.log('Step 2: Fetching Canton public key from IV...');
+  const publicKey = await getCantonPublicKeyForParty(sdk, SOURCE_ADDRESS);
+  console.log(`  PublicKey (base64): ${publicKey}\n`);
 
-  // 3. Poll IV for MPC signing completion
-  console.log('Step 3: Waiting for MPC signing...');
-  const result = await waitForOperation(operationId);
+  // 3. Submit to MPA Canton signTransaction API
+  console.log('Step 3: Submitting signTransaction to MPA Canton API...');
+  const txId = await signCantonTransaction({
+    tx: preparedTransaction,
+    txHash: preparedTransactionHash,
+    publicKey,
+  });
+  console.log(`  txId: ${txId}\n`);
+
+  // 4. Poll MPA for signing completion
+  console.log('Step 4: Waiting for signing...');
+  const result = await waitForSignature(txId);
   if (!result?.signature) {
-    throw new Error('Operation did not return a signature');
+    throw new Error('Transaction did not return a signature');
   }
   console.log(`  Signature (base64): ${result.signature}\n`);
 
-  // 4. Execute the signed transaction on the Canton ledger
-  console.log('Step 4: Executing signed transaction on Canton ledger...');
+  // 5. Execute the signed transaction on the Canton ledger
+  console.log('Step 5: Executing signed transaction on Canton ledger...');
   await executeCantonTransaction(sdk, prepareResponse, result.signature, SOURCE_ADDRESS);
   console.log('\nDone. Transfer submitted to Canton ledger.');
 }

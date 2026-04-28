@@ -19,7 +19,7 @@ const ASSET_ID = 12; // HOODI
 const MINT_AMOUNT = '40000000000000000000';
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY);
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.IV_API_KEY);
 
 function createTransferCalldata(receiverAddress: string): string {
   try {
