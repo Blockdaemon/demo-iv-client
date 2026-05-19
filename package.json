@@ -1,5 +1,5 @@
 {
-  "name": "eth-vault-client",
+  "name": "demo-vault-client",
   "version": "1.0.0",
   "description": "Institutional Vault SDK demo client",
   "main": "main.ts",
