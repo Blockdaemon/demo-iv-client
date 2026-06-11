@@ -65,11 +65,10 @@ async function buildUnsignedDeployTx(from: typeof WITHDRAWAL_ADDRESS): Promise<H
 
 function buildDeployRequest(
   rawTransaction: string,
-  opts: { caip19: string; testNetwork: boolean; initiatorId?: string },
+  opts: { caip19: string; initiatorId?: string },
 ): cwpMakeTransactionStartRequest {
   return {
     CAIP19: opts.caip19,
-    TestNetwork: opts.testNetwork,
     Source: { Address: WITHDRAWAL_ADDRESS },
     RawTransaction: rawTransaction,
     ...(opts.initiatorId ? { InitiatorID: opts.initiatorId } : {}),
@@ -91,19 +90,17 @@ async function waitForTerminalStatus(operationId: string): Promise<cwpOperationS
 
 export async function main() {
   const caip19 = env('IV_CAIP19', DEFAULT_CAIP19);
-  const testNetwork = env('IV_TEST_NETWORK', 'true') !== 'false';
   const initiatorId = env('IV_INITIATOR_ID') || undefined;
   const explorerBase = env('IV_EXPLORER_TX_URL', DEFAULT_EXPLORER_TX);
 
   console.log('EVM contract deploy via CWP makeTransaction (sign RawTransaction, then broadcast locally)');
   console.log(`  Source:       ${WITHDRAWAL_ADDRESS}`);
   console.log(`  CAIP-19:      ${caip19}`);
-  console.log(`  TestNetwork:  ${testNetwork}\n`);
 
   const rawHex = await buildUnsignedDeployTx(WITHDRAWAL_ADDRESS);
   console.log(`Unsigned tx (hex): ${rawHex.slice(0, 66)}… (${rawHex.length} chars)\n`);
 
-  const request = buildDeployRequest(rawHex, { caip19, testNetwork, initiatorId });
+  const request = buildDeployRequest(rawHex, { caip19, initiatorId });
   console.log('Request body:', JSON.stringify(request, null, 2));
 
   const { OperationID } = await TransactionsService.cwpstartMakeTransaction(request);
