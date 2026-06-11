@@ -20,7 +20,7 @@ const ASSET_ID = 12; // ETH
 const DEPOSIT_AMOUNT = '0.1'; // ETH
 
 OpenAPI.BASE = (typeof process !== 'undefined' && process.env?.IV_API_BASE_URL) || 'https://demo.localtunnel.prd.wallet.blockdaemon.app';
-OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.WALLET_API_KEY) as string;
+OpenAPI.TOKEN = (typeof process !== 'undefined' && process.env?.IV_API_KEY) as string;
 
 async function getIVWalletAddress(): Promise<string> {
   console.log('🔍 Getting IV wallet address...');
