@@ -7,15 +7,18 @@
     "start": "tsx main.ts",
     "build": "tsx --check main.ts",
     "dev": "tsx watch main.ts",
-    "check": "tsx --check main.ts"
+    "check": "tsx --check main.ts",
+    "generate:canton-signing-sdk": "openapi-typescript-codegen -i canton-gateway-signing-interface.yaml -o iv-sdk-canton-signing --client fetch",
+    "canton-create-externalparty": "tsx --env-file=.env canton-create-externalparty.ts"
   },
   "dependencies": {
-    "@canton-network/wallet-sdk": "^1.0.0",
+    "@canton-network/wallet-sdk": "^1.4.0",
     "axios": "^1.12.2",
     "viem": "^2.37.4"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",
+    "openapi-typescript-codegen": "^0.29.0",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },

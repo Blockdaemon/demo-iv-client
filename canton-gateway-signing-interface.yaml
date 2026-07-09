@@ -1,0 +1,413 @@
+openapi: 3.1.0
+info:
+  title: Canton Signing Driver API
+  description: |
+    HTTP JSON API for Canton transaction signing via MPC. Mounted at `/api/cwp/canton`
+    on the Institutional Vault gateway.
+
+    The Signing Driver provides key management and Ed25519 MPC signing for Canton ledger
+    transactions. Keys are derived from a hierarchical deterministic master key.
+    Signing operations are asynchronous — `signTransaction` returns immediately with a
+    `pending` status; poll with `getTransaction` until the status transitions to `signed`, `rejected`, or `failed`.
+  version: 0.1.0
+  license:
+    name: Proprietary
+    identifier: LicenseRef-Proprietary
+servers:
+- url: /api/cwp/canton
+security: []
+paths:
+  /signTransaction:
+    post:
+      tags:
+        - Signing
+      summary: Sign a Canton transaction
+      description: |
+        Submit a prepared Canton transaction for MPC signing. The operation is
+        asynchronous — the response reflects the initial operation state (typically
+        `pending`). Poll `POST /getTransaction` with the returned `txId` to track
+        progress.
+
+        Internally creates a `SignRawTransactionIntent` / `make_transaction` MPA
+        operation. The `userIdentifier` must match a registered MPA user id (JWT
+        email).
+      operationId: signTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignTransactionParams"
+      responses:
+        "200":
+          description: Operation accepted. Status may be `pending`, `signed`, `rejected`, or `failed`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /getTransaction:
+    post:
+      tags:
+        - Signing
+      summary: Get a single transaction by ID
+      description: |
+        Retrieve the current status and result of a signing operation by its
+        provider-assigned transaction ID.
+      operationId: getTransaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetTransactionParams"
+      responses:
+        "200":
+          description: Transaction found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /getTransactions:
+    post:
+      tags:
+        - Signing
+      summary: Get multiple transactions
+      description: |
+        Retrieve the status of multiple signing operations. Filter by either
+        `publicKeys` or `txIds` — exactly one must be provided (not both, not
+        neither).
+
+        When filtering by `publicKeys`, all `make_transaction` operations whose
+        source account matches a derived key for the given public key are returned.
+        Unknown `txIds` are silently omitted from the result array.
+      operationId: getTransactions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetTransactionsParams"
+      responses:
+        "200":
+          description: Matching transactions.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /getKeys:
+    post:
+      tags:
+        - Keys
+      summary: List signing keys
+      description: |
+        List all Ed25519 public keys available for signing under the specified
+        master key and CAIP-2 chain. Each key corresponds to one MPA account.
+        Public keys are returned base64-encoded.
+      operationId: getKeys
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GetKeysParams"
+      responses:
+        "200":
+          description: Available keys.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Key"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /createKey:
+    post:
+      tags:
+        - Keys
+      summary: Create a new signing key
+      description: |
+        Create a new MPA account (and derived Ed25519 key) under the specified
+        master key. This is a synchronous operation — the call blocks until key
+        generation completes.
+
+        Key names must match `^\w+( \w+)*$` (word characters, single spaces
+        allowed between words).
+      operationId: createKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateKeyParams"
+      responses:
+        "200":
+          description: Key created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Key"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+components:
+  schemas:
+    ContextParams:
+      type: object
+      description: |
+        Common context fields included in every request. Identifies the HD master
+        key and the Canton chain.
+      required:
+        - masterKey
+        - caip2
+      properties:
+        masterKey:
+          type: string
+          description: Name of the HD master key.
+          example: DefaultMasterKey
+        caip2:
+          type: string
+          description: |
+            CAIP-2 chain identifier for the target Canton network.
+          example: "canton:devnet"
+
+    KeyIdentifier:
+      type: object
+      description: |
+        Identifies a signing key. At least one of `publicKey` or `id` must be
+        provided. When both are set, the server cross-checks that they refer to
+        the same account.
+      properties:
+        id:
+          type: string
+          description: Account name (unique identifier for the key).
+          example: my-account
+        publicKey:
+          type: string
+          description: Base64-encoded Ed25519 public key.
+          example: MCowBQYDK2VwAyEA...
+
+    SignTransactionParams:
+      allOf:
+        - $ref: "#/components/schemas/ContextParams"
+        - type: object
+          required:
+            - keyIdentifier
+            - tx
+            - txHash
+            - userIdentifier
+          properties:
+            keyIdentifier:
+              $ref: "#/components/schemas/KeyIdentifier"
+            internalTxId:
+              type: string
+              description: |
+                Optional client-supplied operation ID. Must be alphanumeric
+                (validated by `ValidateOperationID`). If omitted, a random
+                16-character ID is generated.
+              example: op-abc123
+            tx:
+              type: string
+              description: |
+                The full prepared transaction (base64 protobuf bytestring) for
+                verification by the policy nodes.
+              example: CgNmb28SA2Jhcg==
+            txHash:
+              type: string
+              description: |
+                Hash of the prepared transaction. This is the value that will be
+                MPC-signed (Ed25519).
+              example: 5kJXzLGM...
+            userIdentifier:
+              type: string
+              description: |
+                Identity of the initiating user. Must match a registered MPA user
+                ID (the JWT `email` claim).
+              example: alice@example.com
+
+    GetTransactionParams:
+      allOf:
+        - $ref: "#/components/schemas/ContextParams"
+        - type: object
+          required:
+            - txId
+          properties:
+            txId:
+              type: string
+              description: Provider-assigned transaction ID (returned by `signTransaction`).
+              example: op-abc123
+
+    GetTransactionsParams:
+      allOf:
+        - $ref: "#/components/schemas/ContextParams"
+        - type: object
+          properties:
+            publicKeys:
+              type: array
+              description: |
+                Base64-encoded public keys to filter by. Mutually exclusive with
+                `txIds` — exactly one of the two must be provided.
+              items:
+                type: string
+              example:
+                - MCowBQYDK2VwAyEA...
+            txIds:
+              type: array
+              description: |
+                Provider-assigned transaction IDs to retrieve. Mutually exclusive
+                with `publicKeys` — exactly one of the two must be provided.
+              items:
+                type: string
+              example:
+                - op-abc123
+                - op-def456
+
+    GetKeysParams:
+      $ref: "#/components/schemas/ContextParams"
+
+    CreateKeyParams:
+      allOf:
+        - $ref: "#/components/schemas/ContextParams"
+        - type: object
+          required:
+            - name
+            - userIdentifier
+          properties:
+            name:
+              type: string
+              description: |
+                Human-readable name for the new key / account. Must match
+                `^\w+( \w+)*$`.
+              example: Treasury 1
+            userIdentifier:
+              type: string
+              description: Identity of the user creating the key (JWT email).
+              example: alice@example.com
+
+    SigningStatus:
+      type: string
+      description: Status of a signing operation.
+      enum:
+        - pending
+        - signed
+        - rejected
+        - failed
+
+    Transaction:
+      type: object
+      description: |
+        Represents the state of a signing operation. On success (`signed`),
+        `signature` contains the Ed25519 signature. On failure, `metadata`
+        carries error details.
+      required:
+        - txId
+        - status
+      properties:
+        txId:
+          type: string
+          description: Provider-assigned unique identifier for the operation.
+          example: op-abc123
+        status:
+          $ref: "#/components/schemas/SigningStatus"
+        publicKey:
+          type: string
+          description: Base64-encoded Ed25519 public key used to sign.
+          example: MCowBQYDK2VwAyEA...
+        signature:
+          type: string
+          description: |
+            Ed25519 signature of the transaction hash. Present only when
+            `status` is `signed`.
+          example: MEUCIQD...
+        metadata:
+          type: object
+          description: |
+            Additional context. On `failed` / `rejected` status, contains
+            `ErrorCode` (string) and `ErrorProperties` (object).
+          additionalProperties: true
+          example:
+            ErrorCode: M0025
+            ErrorProperties:
+              message: blocked by policy
+
+    Key:
+      type: object
+      description: An Ed25519 signing key derived from the HD master key.
+      required:
+        - id
+        - name
+        - publicKey
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the key (account name).
+          example: my-account
+        name:
+          type: string
+          description: Human-readable name.
+          example: my-account
+        publicKey:
+          type: string
+          description: Base64-encoded Ed25519 public key.
+          example: MCowBQYDK2VwAyEA...
+
+    Error:
+      type: object
+      description: Error response body.
+      required:
+        - message
+      properties:
+        errorCode:
+          type: string
+          description: Machine-readable error code (e.g. `M0025`).
+        message:
+          type: string
+          description: Human-readable error description.
+        data:
+          description: Optional structured error details.
+
+  responses:
+    BadRequest:
+      description: Invalid request (malformed JSON, validation failure, or constraint violation).
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
