@@ -20,7 +20,8 @@
   },
   "include": [
     "*.ts",
-    "iv-sdk-typescript/**/*.ts"
+    "iv-sdk-typescript/**/*.ts",
+    "iv-sdk-canton-signing/**/*.ts"
   ],
   "exclude": [
     "node_modules",

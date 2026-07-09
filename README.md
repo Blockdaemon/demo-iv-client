@@ -1,14 +1,15 @@
 # Institutional Vault Client SDKs
 
-This repository contains client SDKs generated from the Institutional Wallet OpenAPI specification.
+Client SDKs generated from Institutional Vault OpenAPI specs, plus TypeScript examples.
 
 ## Generating SDKs
 
-When the OpenAPI specification is updated, regenerate the SDKs:
-
 ```bash
-# TypeScript
+# Full wallet / CWP join
 npx openapi-typescript-codegen -i openapi.yaml -o iv-sdk-typescript
+
+# Vault Canton Signing API (/api/cwp/canton)
+npm run generate:canton-signing-sdk
 
 # Java
 openapi-generator generate -i openapi.yaml -g java -o ./iv-sdk-java
@@ -18,7 +19,6 @@ mkdir -p ./iv-sdk-go
 oapi-codegen -package client -generate types,client -o ./iv-sdk-go/iv-client.gen.go openapi.yaml
 ```
 
-### Getting Help
+## Examples
 
-- [OpenAPI Generator Documentation](https://openapi-generator.tech/)
-- [oapi-codegen Documentation](https://github.com/oapi-codegen/oapi-codegen)
+- [Create a Canton external party](canton-create-externalparty.md)
