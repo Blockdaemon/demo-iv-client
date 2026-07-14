@@ -1,12 +1,12 @@
 # Institutional Vault - CWP Example Scripts
 
-TypeScript examples demonstrating programmatic use of the Institutional Vault [Core Wallet Platform (CWP)](https://vault.docs.blockdaemon.com/docs/cwp-overview) API.
+TypeScript examples demonstrating programmatic use of the Institutional Vault [Core Wallet Platform (CWP)](https://vault.docs.blockdaemon.com/reference/quick-start-blockdaemon-wallet) API.
 
 ## Prerequisites
 
 - **Node.js** >= 18
 - An Institutional Vault instance with at least one account and registered chain
-- A **system user API key** (on-prem) or **Bearer JWT** (cloud) with Admin or MarketOps role
+- A **API User key** or **Bearer JWT** with Admin or MarketOps role
 - For Canton examples: participant JSON Ledger API access with OAuth client credentials
 
 ## Quick start
@@ -37,7 +37,7 @@ Each example has a companion doc in [`docs/`](docs/) describing required env var
 | `openapi/openapi.yaml` | Joined wallet + CWP spec (all routes). Download the latest from your Vault at `https://<your-vault>/swagger.html` (served as `openapi.yaml`). |
 | `openapi/canton-gateway-signing-interface.yaml` | Canton Signing API (`/api/cwp/canton`) |
 
-These specs are pinned to a specific Vault release. To refresh, download from your running instance's `/swagger.html` endpoint or copy from a tagged IV release (`mothership/docs/openapi-public-docs.yaml`), then run `npm run generate` and `npm run typecheck` to verify compatibility.
+These specs are pinned to a specific Vault release. To refresh, download from your running instance's `/swagger.html` endpoint, then run `npm run generate` and `npm run typecheck` to verify compatibility.
 
 ## Advanced: other language SDKs
 
@@ -55,6 +55,6 @@ oapi-codegen -package client -generate types,client -o ./iv-sdk-go/iv-client.gen
 ## Links
 
 - [Vault documentation](https://vault.docs.blockdaemon.com/)
-- [CWP makeTransaction guide](https://vault.docs.blockdaemon.com/docs/cwp-make-transaction)
+- [CWP makeTransaction guide](https://vault.docs.blockdaemon.com/reference/cwpstartmaketransaction)
 - [Generate client SDKs](https://vault.docs.blockdaemon.com/reference/generate-client-sdks)
-- [CWP operations overview](https://vault.docs.blockdaemon.com/docs/cwp-operations)
+- [CWP operations overview](https://vault.docs.blockdaemon.com/reference/cwpgetoperationstatus)
