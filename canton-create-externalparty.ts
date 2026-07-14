@@ -7,8 +7,8 @@
  *   3. signTransaction on Vault (topology multiHash)
  *   4. allocate on the participant
  *
- * Required env: IV_API_BASE_URL, IV_API_KEY, IV_USER_IDENTIFIER,
- * LEDGER_CLIENT_URL, CANTON_AUTH_CLIENT_SECRET (see .env-example).
+ * Required env: IV_API_BASE_URL, IV_API_KEY, IV_INITIATOR_ID,
+ * LEDGER_CLIENT_URL, CANTON_AUTH_* (see .env-example).
  */
 
 import { SDK, type TokenProviderConfig } from '@canton-network/wallet-sdk';
@@ -19,42 +19,30 @@ import {
   SigningStatus,
   type Key,
 } from './iv-sdk-canton-signing';
+import { env, requireEnv } from './lib/env';
 
-declare const process: any;
-declare const require: any;
-declare const module: any;
-
-const MASTER_KEY = process.env.MASTER_KEY || 'Default';
-const CAIP2 = process.env.CANTON_CAIP2 || 'canton:devnet';
-const PARTY_HINT = process.env.PARTY_HINT || 'ext-party-iv';
-const KEY_NAME = process.env.KEY_NAME || PARTY_HINT.replace(/-/g, '_');
-
-function envRequired(key: string): string {
-  const v = process.env[key];
-  if (!v) throw new Error(`${key} is required - set it in .env`);
-  return v;
-}
+const MASTER_KEY = env('MASTER_KEY', 'Default');
+const CAIP2 = env('CANTON_CAIP2', 'canton:devnet');
+const PARTY_HINT = env('PARTY_HINT', 'ext-party-iv');
+const KEY_NAME = env('KEY_NAME', PARTY_HINT.replace(/-/g, '_'));
 
 function configureVaultCantonApi(): void {
-  const base = envRequired('IV_API_BASE_URL').replace(/\/$/, '');
+  const base = requireEnv('IV_API_BASE_URL').replace(/\/$/, '');
   OpenAPI.BASE = `${base}/api/cwp/canton`;
-  OpenAPI.TOKEN = envRequired('IV_API_KEY');
+  OpenAPI.TOKEN = requireEnv('IV_API_KEY');
 }
 
 function ledgerAuth(): TokenProviderConfig {
-  const issuer = (
-    process.env.CANTON_AUTH_ISSUER ||
-    'https://keycloak.dev.canton.blockdaemon.com/realms/canton-devnet'
-  ).replace(/\/$/, '');
+  const issuer = requireEnv('CANTON_AUTH_ISSUER').replace(/\/$/, '');
 
   return {
     method: 'client_credentials',
     configUrl: `${issuer}/.well-known/openid-configuration`,
     credentials: {
-      clientId: process.env.CANTON_AUTH_CLIENT_ID || 'bd-6-backend',
-      clientSecret: envRequired('CANTON_AUTH_CLIENT_SECRET'),
-      audience: process.env.CANTON_AUTH_AUDIENCE || 'https://canton.network.global',
-      scope: process.env.CANTON_AUTH_SCOPE || 'daml_ledger_api',
+      clientId: requireEnv('CANTON_AUTH_CLIENT_ID'),
+      clientSecret: requireEnv('CANTON_AUTH_CLIENT_SECRET'),
+      audience: env('CANTON_AUTH_AUDIENCE', 'https://canton.network.global'),
+      scope: env('CANTON_AUTH_SCOPE', 'daml_ledger_api'),
     },
   };
 }
@@ -72,7 +60,7 @@ async function createOrGetKey(name: string): Promise<Key> {
   return KeysService.createKey({
     ...ctx,
     name,
-    userIdentifier: envRequired('IV_USER_IDENTIFIER'),
+    userIdentifier: requireEnv('IV_INITIATOR_ID'),
   });
 }
 
@@ -88,7 +76,7 @@ async function signWithVault(params: {
     keyIdentifier: { publicKey: params.publicKey, id: params.keyId },
     tx: params.tx,
     txHash: params.txHash,
-    userIdentifier: envRequired('IV_USER_IDENTIFIER'),
+    userIdentifier: requireEnv('IV_INITIATOR_ID'),
   });
   console.log(`  signTransaction txId=${tx.txId} status=${tx.status}`);
 
@@ -112,10 +100,9 @@ async function main(): Promise<void> {
 
   const sdk = await SDK.create({
     auth,
-    ledgerClientUrl: envRequired('LEDGER_CLIENT_URL'),
+    ledgerClientUrl: requireEnv('LEDGER_CLIENT_URL'),
   });
 
-  // 1. Create (or reuse) an Ed25519 signing key in Vault
   console.log('Step 1: createKey / getKeys');
   const key = await createOrGetKey(KEY_NAME);
   const fingerprint = await sdk.keys.fingerprint(key.publicKey);
@@ -123,7 +110,6 @@ async function main(): Promise<void> {
   console.log(`  publicKey=${key.publicKey}`);
   console.log(`  fingerprint=${fingerprint}`);
 
-  // 2. Generate topology on the participant
   console.log('\nStep 2: generate-topology');
   const prepared = sdk.party.external.create(key.publicKey, {
     partyHint: PARTY_HINT,
@@ -134,7 +120,6 @@ async function main(): Promise<void> {
   console.log(`  multiHash=${topology.multiHash}`);
   console.log(`  topologyTransactions=${topology.topologyTransactions.length}`);
 
-  // 3. Sign the topology multiHash with Vault
   console.log('\nStep 3: signTransaction');
   const signature = await signWithVault({
     tx: Buffer.from(JSON.stringify(topology.topologyTransactions), 'utf-8').toString('base64'),
@@ -144,7 +129,6 @@ async function main(): Promise<void> {
   });
   console.log(`  signature=${signature.slice(0, 40)}...`);
 
-  // 4. Allocate the external party on the participant
   console.log('\nStep 4: allocate');
   const party = await prepared.execute(signature, { grantUserRights: true });
   console.log(`  partyId=${party.partyId}`);
@@ -152,7 +136,7 @@ async function main(): Promise<void> {
   console.log('\nDone.');
 }
 
-if (typeof require !== 'undefined' && require.main === module) {
+if (require.main === module) {
   main().catch((err) => {
     console.error(err);
     process.exit(1);
