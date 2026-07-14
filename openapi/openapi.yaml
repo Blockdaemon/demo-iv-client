@@ -1,12 +1,11 @@
 openapi: 3.1.0
 info:
   version: 1.0.0
-  title: Institutional Wallet
-  description: A must-have wallet for all institutions
+  title: Institutional Vault
+  description: Institutional Vault API - wallet management and Core Wallet Platform (CWP)
   contact:
     name: Blockdaemon
-    email: info@blockdaemon.com
-    url: https://blockdaemon.com
+    url: https://vault.docs.blockdaemon.com
 servers:
   - url: https://{domain}
     variables:
@@ -45,9 +44,19 @@ tags:
   - name: Health
     x-displayName: Health
   - name: Addresses
+    description: Derive addresses, resolve address ownership, and Solana account metadata.
     x-displayName: Addresses
   - name: Policies
+    description: Read policy restrictions and start restriction update operations.
     x-displayName: Policies
+  - name: Events
+    description: Subscribe to events over WebSocket.
+    x-displayName: Events
+  - name: Prices
+    description: Look up USD prices for registered assets.
+    x-displayName: Prices
+  - name: Balances
+    x-displayName: Balances
   - name: WalletConnect
     x-displayName: WalletConnect
 paths:
@@ -506,39 +515,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-  /api/assets/{abbreviation}/icon:
-    get:
-      tags:
-        - Assets
-      summary: Get an Asset Icon
-      description: Gets the configuration coin icons of the wallet
-      operationId: getAssetIcon
-      parameters:
-        - schema:
-            type: string
-          description: abbreviation of the coin
-          name: abbreviation
-          in: path
-          required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AssetIconResponse'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
   /api/assets/{caip19}:
     get:
       deprecated: true
@@ -605,7 +581,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-  /api/assets/{asset}/validators:
+  /api/assets/{caip19}/validators:
     get:
       tags:
         - Assets
@@ -615,8 +591,8 @@ paths:
       parameters:
         - schema:
             type: string
-          description: name of the asset
-          name: asset
+          description: CAIP-19 asset identifier
+          name: caip19
           in: path
           required: true
         - schema:
@@ -688,32 +664,9 @@ paths:
           in: query
           required: true
         - schema:
-            type: boolean
-          description: >-
-            Boolean parameter for specifying whether to filter audit logs down
-            to user events
-          name: user_filter
-          in: query
-        - schema:
-            type: boolean
-          description: >-
-            Boolean parameter for specifying whether to filter audit logs down
-            to policy events
-          name: policy_filter
-          in: query
-        - schema:
-            type: boolean
-          description: >-
-            Boolean parameter for specifying whether to filter audit logs down
-            to staking events
-          name: staking_filter
-          in: query
-        - schema:
-            type: boolean
-          description: >-
-            Boolean parameter for specifying whether to filter audit logs down
-            to gas/fee-burning events
-          name: fee_filter
+            type: string
+          description: Filter audit logs to a specific operation by its ID
+          name: operation_id
           in: query
         - schema:
             type: string
@@ -2226,9 +2179,8 @@ paths:
             schema:
               $ref: '#/components/schemas/StakingWithdrawalRequest'
             example:
-              Asset: ETH
+              CAIP19: eip155:1/slip44:60
               ValidatorAddress: '0xce4A28264283C7862B4809d22051F0756816001e'
-              VaultId: 33
       responses:
         '200':
           description: OK
@@ -3703,7 +3655,7 @@ paths:
       tags:
         - Accounts
       summary: Get All Vaults
-      description: Get all unhidden vaults and count of hidden vaults.
+      description: Get all vaults.
       operationId: getVaults
       parameters:
         - schema:
@@ -3734,6 +3686,21 @@ paths:
           name: pageSize
           in: query
           required: true
+        - schema:
+            type: string
+          description: optional account name search string
+          name: search_name
+          in: query
+        - schema:
+            type: boolean
+          description: use partial case-insensitive account name match
+          name: partial
+          in: query
+        - schema:
+            type: boolean
+          description: include only hidden (`true`) or only visible (`false`) accounts
+          name: hidden
+          in: query
       responses:
         '200':
           description: OK
@@ -3815,126 +3782,6 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
         '404':
           description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/vaults/createVault:
-    post:
-      deprecated: true
-      tags:
-        - Accounts
-      summary: Create New Vault
-      description: >-
-        Create a new vault with a given name. Name must only consist of
-        alphanumeric characters. Returns the VaultId of the vault.
-      operationId: createVault
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateVaultRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/VaultCreatedResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/vaults/search:
-    get:
-      tags:
-        - Accounts
-      summary: Search Vaults
-      description: Search among hidden vaults
-      operationId: searchVaults
-      parameters:
-        - schema:
-            type: string
-          description: the name to search for
-          name: search_name
-          in: query
-        - schema:
-            type: integer
-          description: size of pages requested
-          name: page_size
-          in: query
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SearchHiddenVaultsResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
           content:
             application/json:
               schema:
@@ -4244,134 +4091,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-  /api/vaults/{id}/hide:
-    post:
-      tags:
-        - Accounts
-      summary: Hide a Vault
-      description: Hide Vault
-      operationId: hideVault
-      parameters:
-        - name: id
-          schema:
-            type: integer
-            format: int64
-          description: id of the vault
-          in: path
-          required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HideResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '409':
-          description: Conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/vaults/{id}/unhide:
-    post:
-      tags:
-        - Accounts
-      summary: UnHide a Vault
-      description: UnHide Vault
-      operationId: unHideVault
-      parameters:
-        - name: id
-          schema:
-            type: integer
-            format: int64
-          description: id of the vault
-          in: path
-          required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnHideResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '409':
-          description: Conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
   /api/rri:
     get:
       tags:
@@ -4626,6 +4345,228 @@ paths:
           description: Address not found
         '500':
           $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/balances/onchain:
+    post:
+      tags:
+        - Balances
+      summary: Get on-chain balance
+      description: >-
+        Returns the confirmed on-chain balance for the given master key,
+        account, and asset (CAIP-19), aggregated across all derived addresses.
+        The balance is a major-unit decimal string (e.g. `"0.25"`).
+      operationId: cwpgetOnChainBalance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpBalanceRequest'
+      responses:
+        '200':
+          description: The on-chain balance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpTokenBalance'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '404':
+          description: >-
+            Not found — the master key / account does not exist, or the CAIP-19
+            is not registered.
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/balances/spendable:
+    post:
+      tags:
+        - Balances
+      summary: Get spendable balance
+      description: >-
+        Returns the spendable balance for the given master key, account, and
+        asset (CAIP-19).
+      operationId: cwpgetSpendableBalance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpBalanceRequest'
+      responses:
+        '200':
+          description: The spendable balance.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpTokenBalance'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '404':
+          description: >-
+            Not found — the master key / account does not exist, or the CAIP-19
+            is not registered.
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/balances/onchain/tokens:
+    get:
+      tags:
+        - Balances
+      summary: Get on-chain token balances
+      description: >-
+        Returns the confirmed on-chain balance for all registered tokens, summed
+        across all accounts. Tokens for which the balance could not be retrieved
+        have an empty `Amount`.
+      operationId: cwpgetOnChainTokenBalances
+      responses:
+        '200':
+          description: On-chain balances for all registered tokens.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpTokenBalance'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/balances/spendable/tokens:
+    get:
+      tags:
+        - Balances
+      summary: Get spendable token balances
+      description: >-
+        Returns the spendable balance for all registered tokens, summed across
+        all accounts. Tokens for which the balance could not be retrieved have
+        an empty `Amount`.
+      operationId: cwpgetSpendableTokenBalances
+      responses:
+        '200':
+          description: Spendable balances for all registered tokens.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpTokenBalance'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/balances/onchain/tokens/account:
+    post:
+      tags:
+        - Balances
+      summary: Get on-chain token balances for account
+      description: >-
+        Returns the confirmed on-chain balance for each token the account has
+        addresses for. Tokens for which the balance could not be retrieved have
+        an empty `Amount`.
+      operationId: cwpgetOnChainTokenBalancesForAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpTokenBalancesForAccountRequest'
+      responses:
+        '200':
+          description: On-chain balances for tokens the account has addresses for.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpTokenBalance'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '404':
+          description: Not found — the master key or account does not exist.
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/balances/spendable/tokens/account:
+    post:
+      tags:
+        - Balances
+      summary: Get spendable token balances for account
+      description: >-
+        Returns the spendable balance for each token the account has addresses
+        for. Tokens for which the balance could not be retrieved have an empty
+        `Amount`.
+      operationId: cwpgetSpendableTokenBalancesForAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpTokenBalancesForAccountRequest'
+      responses:
+        '200':
+          description: Spendable balances for tokens the account has addresses for.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpTokenBalance'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '404':
+          description: Not found — the master key or account does not exist.
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/prices/usd:
+    post:
+      tags:
+        - Prices
+      summary: Get USD prices
+      description: Returns the USD price for each of the given assets (CAIP-19).
+      operationId: cwpgetUSDPrices
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpUsdPricesRequest'
+      responses:
+        '200':
+          description: The USD prices.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpTokenPrice'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '404':
+          description: Not found — one of the given CAIP-19s is not registered.
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/tokens/metadata:
+    post:
+      tags:
+        - Assets
+      summary: Get token metadata
+      description: >-
+        Returns the symbol and decimals for an asset (CAIP-19), looked up
+        directly from the chain. Symbol and decimals are omitted if they could
+        not be determined for this asset.
+      operationId: cwpgetTokenMetadata
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpTokenMetadataRequest'
+      responses:
+        '200':
+          description: The token metadata.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpTokenMetadata'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '404':
+          description: Not found — the CAIP-19's chain is not supported.
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
   /api/cwp/solana/accountInfo:
     post:
       tags:
@@ -4659,7 +4600,7 @@ paths:
     post:
       tags:
         - Assets
-      summary: Start Register Token operation
+      summary: Register Token
       description: >-
         Start an async Register Token operation. Status can be queried with
         [`GET
@@ -4686,7 +4627,7 @@ paths:
     post:
       tags:
         - Assets
-      summary: Start Register Custom Chain operation
+      summary: Register Custom Chain
       description: >-
         Start an async Register Custom Chain operation. Registers a custom chain
         (CAIP-2) and its native asset (CAIP-19). The chain ID is derived from
@@ -4715,7 +4656,7 @@ paths:
     post:
       tags:
         - Assets
-      summary: Start Unregister Token operation
+      summary: Unregister Token
       description: >-
         Start an async Unregister Token operation. Removes a token previously
         registered with `registerToken`. Status can be queried with [`GET
@@ -4742,7 +4683,7 @@ paths:
     post:
       tags:
         - Assets
-      summary: Start Unregister Chain operation
+      summary: Unregister Chain
       description: >-
         Start an async Unregister Chain operation. Removes a chain previously
         registered with `registerCustomChain`. Fails if any non-native tokens
@@ -4834,6 +4775,24 @@ paths:
                   $ref: '#/components/schemas/cwpToken'
         '500':
           $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/accounts/list:
+    get:
+      tags:
+        - Accounts
+      summary: List accounts
+      description: Returns all accounts registered for the tenant, across all master keys.
+      operationId: cwplistAccounts
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpAccount'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
   /api/cwp/operations/search:
     post:
       tags:
@@ -4851,8 +4810,11 @@ paths:
         response body is a **`ListOperationsResult`**: `Intents` is a JSON array
         of **stored intent objects** (standard `application/json` encoding of
         each intent struct). Each element matches one variant of
-        **`IntentItem`**.; use the object's **`OperationType`** field to select
-        the variant. This is not a base64 blob, `json.RawMessage`, or
+        **`IntentItem`** when the operation type is still startable over HTTP;
+        use the object's **`OperationType`** field to select the variant. Older
+        operation types that can no longer be started (for example `transfer`,
+        `add ERC20 asset`) may still appear in responses but are omitted from
+        the `IntentItem` union. This is not a base64 blob, `json.RawMessage`, or
         double-encoded JSON string layer. Returned intents include common
         metadata when present: `OperationType`, optional `OperationID` and
         `InitiatorID`, and server fields such as `Timestamp` and `InitiatorName`
@@ -4913,7 +4875,7 @@ paths:
     post:
       tags:
         - Policies
-      summary: Start Update Config Restriction operation
+      summary: Update Config Restriction
       description: >-
         Start an async Update Config Restriction operation. Status can be
         queried with [`GET
@@ -4940,7 +4902,7 @@ paths:
     post:
       tags:
         - Policies
-      summary: Start Update Policy Restriction operation
+      summary: Update Policy Restriction
       description: >-
         Start an async Update Policy Restriction operation. Status can be
         queried with [`GET
@@ -4967,7 +4929,7 @@ paths:
     post:
       tags:
         - Policies
-      summary: Start Update Transaction Restriction operation
+      summary: Update Transaction Restriction
       description: >-
         Start an async Update Transaction Restriction operation. Status can be
         queried with [`GET
@@ -4994,7 +4956,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start Make Transaction operation
+      summary: Make Transaction
       description: >-
         Start an async Make Transaction operation. With structured `Destination`
         (and optional `EVM` / chain-specific fields), creates, signs, and
@@ -5016,7 +4978,6 @@ paths:
               structuredErc20Transfer:
                 summary: Structured ERC-20 transfer (single destination)
                 value:
-                  InitiatorID: operator@example.com
                   CAIP19: eip155:1/erc20:0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48
                   Source:
                     MasterKeyName: Default
@@ -5072,10 +5033,15 @@ paths:
     post:
       tags:
         - Assets
-      summary: Start Delete Token operation
+      summary: Delete Token (deprecated)
+      deprecated: true
       description: >-
-        Start an async Delete Token operation. Removes a previously registered
-        token. Status can be queried with [`GET
+        **Deprecated:** Use [`POST
+        /operations/start/unregisterToken`](#/paths/~1operations~1start~1unregisterToken/post)
+        with required `CAIP19` instead. This route accepts legacy symbol-based
+        input (`Symbol`, optional `ChainName`/`TestNetwork`); the server
+        resolves those fields to CAIP-19 at start. Status can be queried with
+        [`GET
         /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
       operationId: cwpstartDeleteToken
       requestBody:
@@ -5099,7 +5065,7 @@ paths:
     post:
       tags:
         - Assets
-      summary: Start Associate to SPL Token operation
+      summary: Associate to SPL Token
       description: >-
         Start an async Associate to SPL Token operation. Creates an associated
         token account for the given SPL token. Status can be queried with [`GET
@@ -5126,7 +5092,7 @@ paths:
     post:
       tags:
         - Assets
-      summary: Start Associate Nonce Account operation
+      summary: Associate Nonce Account
       description: >-
         Start an async Associate Nonce Account operation. Creates a Solana nonce
         account for durable transactions. Status can be queried with [`GET
@@ -5153,7 +5119,7 @@ paths:
     post:
       tags:
         - Assets
-      summary: Start Activate Stellar Address operation
+      summary: Activate Stellar Address
       description: >-
         Start an async Activate Stellar Address operation. Funds and activates a
         Stellar address with the minimum XLM balance. Status can be queried with
@@ -5181,7 +5147,7 @@ paths:
     post:
       tags:
         - Accounts
-      summary: Start Backup Master Key operation
+      summary: Backup Master Key
       description: >-
         Start an async Backup Master Key operation. Returns encrypted key shares
         for offline storage. Status can be queried with [`GET
@@ -5208,7 +5174,7 @@ paths:
     post:
       tags:
         - Accounts
-      summary: Start Create Master Key operation
+      summary: Create Master Key
       description: >-
         Start an async Create Master Key operation. Generates a new MPC master
         key via distributed key generation. Status can be queried with [`GET
@@ -5235,10 +5201,13 @@ paths:
     post:
       tags:
         - Accounts
-      summary: Start Create Account operation
+      summary: Create Account
       description: >-
         Start an async Create Account operation. Creates a named account under
-        an existing master key. Status can be queried with [`GET
+        an existing master key. When starting via this CWP endpoint, include
+        `InitiatorID` set to a registered Vault user email so the Vault gateway
+        can create the matching account record when it receives operation status
+        updates. Status can be queried with [`GET
         /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
       operationId: cwpstartCreateAccount
       requestBody:
@@ -5262,7 +5231,7 @@ paths:
     post:
       tags:
         - Accounts
-      summary: Start Attach Master Key operation
+      summary: Attach Master Key
       description: >-
         Start an async Attach Master Key operation. Attaches an externally
         generated master key using pairing messages. Status can be queried with
@@ -5290,7 +5259,7 @@ paths:
     post:
       tags:
         - Users
-      summary: Start Register User operation
+      summary: Register User
       description: >-
         Start an async Register User operation. Adds a user that can participate
         in approval workflows. Status can be queried with [`GET
@@ -5317,7 +5286,7 @@ paths:
     post:
       tags:
         - Users
-      summary: Start Set User Public Key operation
+      summary: Set User Public Key
       description: >-
         Start an async Set User Public Key operation. Associates a public key
         with a registered user. Status can be queried with [`GET
@@ -5344,7 +5313,7 @@ paths:
     post:
       tags:
         - Users
-      summary: Start Delete User operation
+      summary: Delete User
       description: >-
         Start an async Delete User operation. Status can be queried with [`GET
         /operations/id/{operationID}/status`](#/paths/~1operations~1id~1{operationID}~1status/get).
@@ -5370,7 +5339,7 @@ paths:
     post:
       tags:
         - Users
-      summary: Start Reset User operation
+      summary: Reset User
       description: >-
         Start an async Reset User operation. Resets a user's state (e.g. after
         device loss). Status can be queried with [`GET
@@ -5393,11 +5362,135 @@ paths:
           $ref: '#/components/responses/cwpBadRequest'
         '500':
           $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/users/getById:
+    post:
+      tags:
+        - Users
+      summary: Get User
+      description: Get a user by ID.
+      operationId: cwpgetUserById
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - ID
+              properties:
+                ID:
+                  type: string
+                  description: User ID (e.g. email address).
+      responses:
+        '200':
+          description: User found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/cwpUser'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/users/list:
+    get:
+      tags:
+        - Users
+      summary: List Users
+      description: List all registered users.
+      operationId: cwplistUsers
+      responses:
+        '200':
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpUser'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/users/groups/create:
+    post:
+      tags:
+        - Groups
+      summary: Create a group
+      description: >-
+        Creates a new group with the given name. If a group with that name
+        already exists, the operation succeeds without error (idempotent).
+      operationId: cwpcreateGroup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/cwpCreateGroupRequest'
+      responses:
+        '200':
+          description: Group created successfully.
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/users/groups/list:
+    get:
+      tags:
+        - Users
+      summary: Get All Group Members
+      description: Returns all groups and their member user IDs.
+      operationId: cwpgetAllGroupMembers
+      responses:
+        '200':
+          description: Map of group name to list of user IDs
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    type: string
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/users/groups/members:
+    post:
+      tags:
+        - Users
+      summary: List Group Members
+      description: List all members of a named group.
+      operationId: cwplistGroupMembers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - GroupName
+              properties:
+                GroupName:
+                  type: string
+                  description: Name of the group.
+      responses:
+        '200':
+          description: Members of the group
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpUser'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
   /api/cwp/operations/start/updateGroup:
     post:
       tags:
         - Groups
-      summary: Start Update Group operation
+      summary: Update Group
       description: >-
         Start an async Update Group operation. Adds or removes users from a
         named group. Status can be queried with [`GET
@@ -5424,7 +5517,7 @@ paths:
     post:
       tags:
         - Groups
-      summary: Start Rename Group operation
+      summary: Rename Group
       description: >-
         Start an async Rename Group operation. Renames a group and updates all
         restriction references to the old group name. Status can be queried with
@@ -5452,7 +5545,7 @@ paths:
     post:
       tags:
         - Policies
-      summary: Start Update Rates operation
+      summary: Update Rates
       description: >-
         Start an async Update Rates operation. Sets USD spot rates or min/max
         bounds for assets used in policy evaluation. Status can be queried with
@@ -5480,7 +5573,7 @@ paths:
     post:
       tags:
         - Staking
-      summary: Start Stake operation
+      summary: Stake
       description: >-
         Start an async Stake operation. Stakes assets to a validator on the
         specified chain. Status can be queried with [`GET
@@ -5507,7 +5600,7 @@ paths:
     post:
       tags:
         - Staking
-      summary: Start Unstake operation
+      summary: Unstake
       description: >-
         Start an async Unstake operation. Unstakes from the specified
         validators. Status can be queried with [`GET
@@ -5534,7 +5627,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start Generic Signing operation
+      summary: Generic Signing
       description: >-
         Start an async Generic Signing operation. Signs arbitrary data (e.g.
         personal_sign, typed data). Status can be queried with [`GET
@@ -5561,7 +5654,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start Sign Raw Transaction operation (deprecated)
+      summary: Sign Raw Transaction (deprecated)
       deprecated: true
       description: >-
         **Deprecated:** Use [`POST
@@ -5593,7 +5686,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start Sponsor operation
+      summary: Sponsor
       description: >-
         Start an async Sponsor operation. Sponsors contract calls via EIP-7702
         authorization. Requires `Data` and optionally `EIP7702Authorizations` in
@@ -5621,7 +5714,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start Consolidate Funds operation
+      summary: Consolidate Funds
       description: >-
         Start an async Consolidate Funds operation. Moves funds from a
         sub-address back to the main address. Status can be queried with [`GET
@@ -5648,7 +5741,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start Fund Subaddresses operation
+      summary: Fund Subaddresses
       description: >-
         Start an async Fund Subaddresses operation. Distributes funds from the
         main address to multiple sub-addresses. Status can be queried with [`GET
@@ -5675,7 +5768,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start Generate Consolidation Data operation
+      summary: Generate Consolidation Data
       description: >-
         Start an async Generate Consolidation Data operation. Computes call data
         and EIP-7702 authorizations needed for a subsequent consolidation
@@ -5703,7 +5796,7 @@ paths:
     post:
       tags:
         - Cold Wallet
-      summary: Start Create Batch operation
+      summary: Create Batch
       description: >-
         Start an async Create Batch operation. Opens a signing batch for a
         master key; transactions are queued until the batch is finished or
@@ -5731,7 +5824,7 @@ paths:
     post:
       tags:
         - Cold Wallet
-      summary: Start Finish Current Batch operation
+      summary: Finish Current Batch
       description: >-
         Start an async Finish Current Batch operation. Closes the open batch and
         submits partial signatures for all queued transactions. Status can be
@@ -5759,7 +5852,7 @@ paths:
     post:
       tags:
         - Cold Wallet
-      summary: Start Delete Current Batch operation
+      summary: Delete Current Batch
       description: >-
         Start an async Delete Current Batch operation. Discards the open batch
         without signing. Status can be queried with [`GET
@@ -5786,7 +5879,7 @@ paths:
     post:
       tags:
         - Accounts
-      summary: Start Set ERS Public Key operation
+      summary: Set ERS Public Key
       description: >-
         Start an async Set ERS Public Key operation. Sets the RSA public key
         (PKIX DER) used for encrypted recovery shares. Status can be queried
@@ -5814,7 +5907,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start Create Allocation operation
+      summary: Create Allocation
       description: >-
         Start an async Create Allocation operation. Creates a Canton allocation
         for a settlement workflow with executor, deadlines, and destination
@@ -5842,7 +5935,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start Canton Enrollment operation
+      summary: Canton Enrollment
       description: >-
         Start an async Canton Enrollment operation. Enrolls an external party on
         the Canton ledger. Status can be queried with [`GET
@@ -5869,7 +5962,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start Canton Preapproval operation
+      summary: Canton Preapproval
       description: >-
         Start an async Canton Preapproval operation. Creates a transfer
         preapproval for a Canton party. Status can be queried with [`GET
@@ -5896,7 +5989,7 @@ paths:
     post:
       tags:
         - Transactions
-      summary: Start End Investor Onboarding Offer (Canton) operation
+      summary: End Investor Onboarding Offer (Canton)
       description: >-
         Start an async operation to exercise a choice on a Canton
         end-investor-onboarding offer contract (operation type `call choice on
@@ -5964,10 +6057,13 @@ paths:
         - Operations
       summary: Get operation intent
       description: >-
-        Returns the stored intent JSON for the operation (same union of shapes
-        as [`IntentItem`](#/components/schemas/IntentItem), including
+        Returns the stored intent JSON for the operation. Startable operation
+        types match one variant of
+        [`IntentItem`](#/components/schemas/IntentItem), including
         `OperationType` and server-populated fields such as `Timestamp` and
-        `InitiatorName` when present).
+        `InitiatorName` when present. Older operation types that can no longer
+        be started over HTTP may still be returned but are omitted from the
+        `IntentItem` union.
       operationId: cwpgetOperationIntent
       parameters:
         - $ref: '#/components/parameters/cwpoperationID'
@@ -5990,9 +6086,39 @@ paths:
       description: >-
         Sets the operation state to Failed. Returns an error if the operation is
         already in a final state.
+      operationId: cwpcancelOperationDelete
+      parameters:
+        - $ref: '#/components/parameters/cwpoperationID'
+      responses:
+        '200':
+          description: Cancelled. Response body is empty (no JSON payload).
+        '404':
+          $ref: '#/components/responses/cwpNotFound'
+        '409':
+          $ref: '#/components/responses/cwpConflict'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/operations/id/{operationID}/cancel:
+    post:
+      tags:
+        - Operations
+      summary: Cancel an operation
+      description: >-
+        Sets the operation state to Failed. Returns an error if the operation is
+        already in a final state.
       operationId: cwpcancelOperation
       parameters:
         - $ref: '#/components/parameters/cwpoperationID'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cancelledBy:
+                  type: string
+                  description: Identifies who triggered the cancellation.
       responses:
         '200':
           description: Cancelled. Response body is empty (no JSON payload).
@@ -6009,9 +6135,9 @@ paths:
       summary: Get config restrictions
       description: >-
         Returns the tenant's config restrictions. These apply to config-related
-        operations (e.g. adding tokens, registering blockchain networks). When
-        an operation matches a restriction, the specified approvers must approve
-        before it can execute.
+        operations (e.g. adding tokens, registering blockchain networks). When a
+        restriction applies, the specified approvers must approve before the
+        operation can execute.
       operationId: cwpgetConfigRestrictions
       responses:
         '200':
@@ -6032,8 +6158,8 @@ paths:
       description: >-
         Returns the tenant's policy restrictions. These apply to policy-related
         operations (e.g. updating policy set, group, or restriction rules). When
-        an operation matches a restriction, the specified approvers must approve
-        before it can execute.
+        a restriction applies, the specified approvers must approve before the
+        operation can execute.
       operationId: cwpgetPolicyRestrictions
       responses:
         '200':
@@ -6053,10 +6179,11 @@ paths:
       summary: Get transaction restrictions
       description: >-
         Returns the tenant's transaction restrictions. These apply to
-        transaction operations (e.g. transfers). Each restriction can have
-        filters (amount, fee, symbol, source, destination, etc.). When a
-        transaction matches a restriction, the specified approvers must approve
-        before it can execute.
+        transaction operations (e.g. transfers). Each restriction has a filter
+        with criteria (amount, fee, symbol, source, destination, etc.). A
+        restriction applies when its filter matches — i.e. when all criteria are
+        satisfied. When a restriction applies, the specified approvers must
+        approve before the operation can execute.
       operationId: cwpgetTransactionRestrictions
       responses:
         '200':
@@ -6174,6 +6301,47 @@ paths:
           $ref: '#/components/responses/cwpBadRequest'
         '500':
           $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/events:
+    get:
+      tags:
+        - Events
+      summary: Subscribe to events
+      description: >
+        Upgrades the connection to WebSocket. The server pushes `ClientEvent`
+        messages;
+
+        the client does not send data messages.
+
+
+        Event types:
+
+        - `operation_status_update` — an operation changed status. Payload:
+        `OperationStatusUpdatePayload`.
+
+        - `approver_onboarded` — an approver completed onboarding. Payload:
+        `ApproverOnboardedPayload`.
+
+
+        Delivery order of events is not guaranteed. To get the current state,
+        query the server.
+      operationId: cwpsubscribeToEvents
+      parameters:
+        - name: heartbeat
+          in: query
+          required: false
+          description: >-
+            Ping interval in seconds. When set, the server sends a WebSocket
+            ping at this interval and closes the connection if no pong is
+            received within 5 seconds. Omit to disable pings.
+          schema:
+            type: integer
+            minimum: 1
+            example: 30
+      responses:
+        '101':
+          description: Switching Protocols — WebSocket connection established.
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
   /api/cwp/walletconnect/pair:
     post:
       tags:
@@ -6329,6 +6497,7 @@ components:
           base: '#/components/schemas/AddContractAssetRequest'
           besu: '#/components/schemas/AddContractAssetRequest'
           solana: '#/components/schemas/AddContractAssetRequest'
+          tron: '#/components/schemas/AddContractAssetRequest'
           canton: '#/components/schemas/AddCantonAssetRequest'
     AddContractAssetRequest:
       type: object
@@ -6501,7 +6670,6 @@ components:
           type: string
         USDAmount:
           type: string
-    AssetIconResponse: {}
     AssetID:
       required:
         - protocol
@@ -6712,17 +6880,6 @@ components:
           example: e2e marketops 87dbd9c9
         Role:
           $ref: '#/components/schemas/SystemUserRole'
-    CreateVaultRequest:
-      required:
-        - ColdVault
-        - Name
-      properties:
-        ColdVault:
-          type: boolean
-          example: false
-        Name:
-          type: string
-          example: QATestAcc175707397541324861
     CryptoSummary:
       required:
         - pendingRewardsBalance
@@ -7436,7 +7593,6 @@ components:
             - InvalidApprovalOperationType
             - InvalidAsset
             - InvalidAssetContract
-            - InvalidAssetIcon
             - InvalidAssetName
             - InvalidAssetPrecision
             - InvalidAssetType
@@ -7515,6 +7671,8 @@ components:
           type: boolean
         ColdStorage:
           type: boolean
+        CwpWsEvents:
+          type: boolean
         DevTools:
           type: boolean
         EnhancedAudits:
@@ -7530,6 +7688,8 @@ components:
         OmniBus:
           type: boolean
         CantonContractManagement:
+          type: boolean
+        Tokenization:
           type: boolean
     FundSubAddressesRequest:
       properties:
@@ -7892,13 +8052,9 @@ components:
             $ref: '#/components/schemas/ValidatorsForAssetDto'
     GetVaultsResponse:
       required:
-        - HiddenVaultCount
         - TotalCount
         - Vaults
       properties:
-        HiddenVaultCount:
-          type: integer
-          format: integer
         TotalCount:
           type: integer
           format: integer
@@ -7923,7 +8079,6 @@ components:
         Healthy:
           type: boolean
     QRRedirectResponse: {}
-    HideResponse: {}
     GetRuntimeResourceIdentifierResponse: {}
     GetEventStateResponse: {}
     MasterKeyResponse:
@@ -8011,10 +8166,6 @@ components:
         - VaultCreationInitiated
         - VaultCreationSucceeded
         - VaultDappDisconnected
-        - WalletFreezing
-        - WalletFrozen
-        - WalletThawing
-        - WalletUnfrozen
     Network:
       type: string
       enum:
@@ -8171,7 +8322,6 @@ components:
             - '50000'
             - '50001'
             - '60000'
-            - '70000'
             - '70001'
             - '70002'
             - '70003'
@@ -8240,7 +8390,6 @@ components:
         - base
         - canton
         - kaia
-        - tron
     RegisterUserRequest:
       required:
         - Name
@@ -8820,7 +8969,6 @@ components:
         - MarketOps
         - Viewer
         - AutomatedApprover
-    UnHideResponse: {}
     UpdatePolicyListResponse:
       required:
         - AsyncOperationID
@@ -8929,12 +9077,6 @@ components:
             - VaultCreationFailure
             - VaultCreationInProgress
             - VaultCreationSuccess
-    VaultCreatedResponse:
-      required:
-        - ID
-      properties:
-        ID:
-          $ref: '#/components/schemas/AsyncOperationID'
     WSMessage:
       required:
         - MessageType
@@ -9094,9 +9236,6 @@ components:
         VaultId:
           type: integer
           format: int64
-    WsWalletFreezingDto: {}
-    WsWalletFrozenDto: {}
-    WsWalletThawingDto: {}
     CwpSetupStateParams:
       type: object
       description: >-
@@ -9156,6 +9295,66 @@ components:
           type: number
         USDMax:
           type: number
+    cwpClientEvent:
+      type: object
+      description: A server-pushed event delivered over the WebSocket connection.
+      additionalProperties: false
+      required:
+        - Type
+        - Payload
+      properties:
+        Type:
+          type: string
+          description: >-
+            Event type. Known values: `operation_status_update`,
+            `approver_onboarded`.
+        Payload:
+          description: Event-specific data. Shape depends on `Type`.
+          oneOf:
+            - $ref: '#/components/schemas/cwpOperationStatusUpdatePayload'
+            - $ref: '#/components/schemas/cwpApproverOnboardedPayload'
+    cwpOperationStatusUpdatePayload:
+      type: object
+      description: Payload for the `operation_status_update` event.
+      additionalProperties: false
+      required:
+        - OperationID
+        - OperationType
+      properties:
+        OperationID:
+          type: string
+          description: ID of the operation whose status changed.
+        OperationType:
+          type: string
+          description: Operation type.
+    cwpApproverOnboardedPayload:
+      type: object
+      description: Payload for the `approver_onboarded` event.
+      additionalProperties: false
+      required:
+        - UserID
+      properties:
+        UserID:
+          type: string
+          description: ID of the user who completed onboarding.
+    cwpUser:
+      type: object
+      description: A registered user that can participate in approval workflows.
+      additionalProperties: false
+      required:
+        - ID
+        - Name
+        - Active
+      properties:
+        ID:
+          type: string
+          description: User ID (e.g. email address).
+        Name:
+          type: string
+          description: Display name.
+        Active:
+          type: boolean
+          description: True if the user can approve operations.
     cwpGetAddressRequest:
       type: object
       description: Request to get an address for the native asset.
@@ -9224,6 +9423,111 @@ components:
         Address:
           type: string
           description: The blockchain address to resolve.
+    cwpBalanceRequest:
+      type: object
+      description: Request to get a balance for a master key, account, and asset.
+      additionalProperties: false
+      required:
+        - MasterKey
+        - Account
+        - CAIP19
+      properties:
+        MasterKey:
+          type: string
+          description: Master key name.
+        Account:
+          type: string
+          description: Account name.
+        CAIP19:
+          type: string
+          description: Asset identifier in CAIP-19 format (e.g. `eip155:1/slip44:60`).
+    cwpTokenBalance:
+      type: object
+      additionalProperties: false
+      required:
+        - CAIP19
+        - Symbol
+        - ChainName
+        - Amount
+      properties:
+        CAIP19:
+          type: string
+          description: Asset identifier in CAIP-19 format (e.g. `eip155:1/slip44:60`).
+        Symbol:
+          type: string
+          description: Token symbol (e.g. `ETH`, `BTC`).
+        ChainName:
+          type: string
+          description: Human-readable chain name (e.g. `Ethereum`, `Bitcoin`).
+        Amount:
+          type: string
+          description: >-
+            The balance as a major-unit decimal string (e.g. `"0.25"`). An empty
+            string means the balance could not be retrieved for this token.
+    cwpTokenBalancesForAccountRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - MasterKey
+        - Account
+      properties:
+        MasterKey:
+          type: string
+          description: Master key name.
+        Account:
+          type: string
+          description: Account name.
+    cwpUsdPricesRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - CAIP19s
+      properties:
+        CAIP19s:
+          type: array
+          items:
+            type: string
+          description: Asset identifiers in CAIP-19 format (e.g. `eip155:1/slip44:60`).
+    cwpTokenPrice:
+      type: object
+      additionalProperties: false
+      required:
+        - CAIP19
+      properties:
+        CAIP19:
+          type: string
+          description: Asset identifier in CAIP-19 format (e.g. `eip155:1/slip44:60`).
+        Price:
+          type: number
+          description: >-
+            USD price of the asset. Omitted if no price data is available for
+            the asset.
+    cwpTokenMetadataRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - CAIP19
+      properties:
+        CAIP19:
+          type: string
+          description: Asset identifier in CAIP-19 format (e.g. `eip155:1/erc20:0x...`).
+    cwpTokenMetadata:
+      type: object
+      additionalProperties: false
+      required:
+        - CAIP19
+      properties:
+        CAIP19:
+          type: string
+          description: Asset identifier in CAIP-19 format (e.g. `eip155:1/erc20:0x...`).
+        Symbol:
+          type: string
+          description: Symbol of the asset. Omitted if it could not be determined.
+        Decimals:
+          type: integer
+          description: >-
+            Number of decimals of the asset. Omitted if it could not be
+            determined.
     cwpResolveAddressResponse:
       type: object
       additionalProperties: false
@@ -9353,6 +9657,16 @@ components:
         TestNetwork:
           type: boolean
           description: Whether the chain is a test network.
+    cwpCreateGroupRequest:
+      type: object
+      description: Request body for creating a group.
+      additionalProperties: false
+      required:
+        - Name
+      properties:
+        Name:
+          type: string
+          description: Unique name for the group.
     cwpRegisterKnownChainRequest:
       type: object
       description: Request to register a chain from the built-in chain registry.
@@ -9363,6 +9677,26 @@ components:
         CAIP2:
           type: string
           description: CAIP-2 chain identifier (e.g. "eip155:1" for Ethereum mainnet).
+    cwpAccount:
+      type: object
+      additionalProperties: false
+      description: An account row returned by `GET /accounts/list`.
+      required:
+        - Name
+        - MasterKey
+        - IsExternal
+      properties:
+        Name:
+          type: string
+          description: Account name.
+        MasterKey:
+          type: string
+          description: Name of the master key the account belongs to.
+        IsExternal:
+          type: boolean
+          description: >-
+            Whether the master key was generated externally rather than by this
+            system.
     cwpChain:
       type: object
       additionalProperties: false
@@ -9480,6 +9814,9 @@ components:
           description: >-
             Time the operation record was created (RFC 3339). List APIs sort by
             this field descending.
+        ErrorCode:
+          type: string
+          description: Machine-readable error code; present only when Status is Failed.
     cwpSearchOperationInfosRequest:
       type: object
       additionalProperties: false
@@ -9560,18 +9897,42 @@ components:
             Literal blockchain address, or used with derivation fields when
             resolving a registered address.
     cwpTxOutputSearch:
+      type: object
       description: >-
         Transaction output amount plus the fields of
         [`AddressSpec`](#/components/schemas/AddressSpec) for the destination.
-      allOf:
-        - $ref: '#/components/schemas/cwpAddressSpec'
-        - type: object
-          required:
-            - Amount
-          properties:
-            Amount:
-              type: string
-              description: Amount for this output (required).
+      additionalProperties: false
+      unevaluatedProperties: false
+      required:
+        - Amount
+      anyOf:
+        - required:
+            - MasterKeyName
+            - AccountName
+        - required:
+            - Address
+      properties:
+        MasterKeyName:
+          type: string
+          description: >-
+            Master key name; must be paired with `AccountName` when not using
+            `Address` alone.
+        AccountName:
+          type: string
+          description: >-
+            Account name; must be paired with `MasterKeyName` when not using
+            `Address` alone.
+        AddressIndex:
+          type: integer
+          description: Sub-address index within the account; `0` is the main address.
+        Address:
+          type: string
+          description: >-
+            Literal blockchain address, or used with derivation fields when
+            resolving a registered address.
+        Amount:
+          type: string
+          description: Amount for this output (required).
     cwpAddressIndexAmountSearch:
       type: object
       additionalProperties: false
@@ -9650,204 +10011,6 @@ components:
             combined with `USDRate`.
       required:
         - Asset
-    cwpEVMPropertiesSearch:
-      type: object
-      additionalProperties: false
-      properties:
-        ChainID:
-          type: integer
-    cwpBitcoinPropertiesSearch:
-      type: object
-      additionalProperties: false
-      properties:
-        AddressType:
-          type: string
-    cwpSubstratePropertiesSearch:
-      type: object
-      additionalProperties: false
-      properties:
-        NetworkCode:
-          type: integer
-    cwpSolanaPropertiesSearch:
-      type: object
-      description: Empty placeholder for Solana family properties.
-    cwpTVMPropertiesSearch:
-      type: object
-      description: Empty placeholder for TVM family properties.
-    cwpCantonPropertiesSearch:
-      type: object
-      additionalProperties: false
-      properties:
-        ProviderID:
-          type: string
-        DelegatePartyID:
-          type: string
-          description: >-
-            Customer hot-key party used as delegate for TransferCommand cold
-            transfers.
-        TransferCommandExpiry:
-          type: integer
-          description: >-
-            How long a TransferCommand remains valid, in nanoseconds (JSON
-            duration encoding). Defaults to 24h if omitted.
-    cwpXLMPropertiesSearch:
-      type: object
-      description: Empty placeholder for Stellar/XLM family properties.
-    cwpXRPPropertiesSearch:
-      type: object
-      description: Empty placeholder for XRP family properties.
-    cwpFamilyPropertiesAtMostOne:
-      type: object
-      additionalProperties: false
-      description: >-
-        Blockchain-family metadata when registering a custom chain. At most one
-        of `EVMProperties`, `BitcoinProperties`, `SubstrateProperties`,
-        `SolanaProperties`, `TVMProperties`, `CantonProperties`,
-        `XLMProperties`, or `XRPProperties` may be set; the server rejects
-        multiple families in one request.
-      properties:
-        EVMProperties:
-          $ref: '#/components/schemas/cwpEVMPropertiesSearch'
-        BitcoinProperties:
-          $ref: '#/components/schemas/cwpBitcoinPropertiesSearch'
-        SubstrateProperties:
-          $ref: '#/components/schemas/cwpSubstratePropertiesSearch'
-        SolanaProperties:
-          $ref: '#/components/schemas/cwpSolanaPropertiesSearch'
-        TVMProperties:
-          $ref: '#/components/schemas/cwpTVMPropertiesSearch'
-        CantonProperties:
-          $ref: '#/components/schemas/cwpCantonPropertiesSearch'
-        XLMProperties:
-          $ref: '#/components/schemas/cwpXLMPropertiesSearch'
-        XRPProperties:
-          $ref: '#/components/schemas/cwpXRPPropertiesSearch'
-    cwpAddERC20Intent:
-      type: object
-      description: Adds an ERC20 token to the wallet platform.
-      additionalProperties: false
-      properties:
-        InitiatorID:
-          type: string
-          description: Initiator identifier.
-        InitiatorName:
-          type: string
-          description: Initiator display name.
-        OperationType:
-          type: string
-          description: Type of operation and intent variant for this request.
-        OperationID:
-          type: string
-          description: Unique operation identifier.
-        Timestamp:
-          type: string
-          format: date-time
-          description: Time associated with the operation.
-        Address:
-          type: string
-          description: Token contract address.
-        Name:
-          type: string
-          description: Human-readable token name.
-        Symbol:
-          type: string
-        TestNetwork:
-          type: boolean
-        Decimals:
-          type: integer
-        Chain:
-          type: string
-          description: Native symbol of the chain.
-        ChainName:
-          type: string
-        CAIP19:
-          type: string
-          description: CAIP-19 of the chain native asset (not the token).
-    cwpAddSPLTokenIntent:
-      type: object
-      description: Adds a Solana SPL token.
-      additionalProperties: false
-      properties:
-        InitiatorID:
-          type: string
-          description: Initiator identifier.
-        InitiatorName:
-          type: string
-          description: Initiator display name.
-        OperationType:
-          type: string
-          description: Type of operation and intent variant for this request.
-        OperationID:
-          type: string
-          description: Unique operation identifier.
-        Timestamp:
-          type: string
-          format: date-time
-          description: Time associated with the operation.
-        Address:
-          type: string
-        Symbol:
-          type: string
-        TestNetwork:
-          type: boolean
-        Decimals:
-          type: integer
-        Name:
-          type: string
-        Chain:
-          type: string
-          description: Native symbol of the chain.
-        CAIP19:
-          type: string
-        ChainName:
-          type: string
-    cwpAddCantonTokenIntent:
-      type: object
-      description: Adds a Canton token.
-      additionalProperties: false
-      required:
-        - Symbol
-        - Chain
-        - Registrar
-        - InstrumentID
-        - Decimals
-        - Name
-      properties:
-        InitiatorID:
-          type: string
-          description: Initiator identifier.
-        InitiatorName:
-          type: string
-          description: Initiator display name.
-        OperationType:
-          type: string
-          description: Type of operation and intent variant for this request.
-        OperationID:
-          type: string
-          description: Unique operation identifier.
-        Timestamp:
-          type: string
-          format: date-time
-          description: Time associated with the operation.
-        Symbol:
-          type: string
-        Chain:
-          type: string
-        ChainName:
-          type: string
-        Registrar:
-          type: string
-          description: Token registrar; also used as instrument admin.
-        InstrumentID:
-          type: string
-        CAIP19:
-          type: string
-        TestNetwork:
-          type: boolean
-        Decimals:
-          type: integer
-        Name:
-          type: string
     cwpRegisterTokenIntent:
       description: Stored intent shape for `RegisterTokenIntent` (responses and search).
       allOf:
@@ -9859,7 +10022,11 @@ components:
         - $ref: '#/components/schemas/cwpStoredIntentMetadata'
         - $ref: '#/components/schemas/cwpUnregisterTokenIntentPayload'
     cwpDeleteTokenIntent:
-      description: Stored intent shape for `DeleteTokenIntent` (responses and search).
+      description: >-
+        Stored intent shape for `DeleteTokenIntent` (responses and search).
+        **Deprecated** for new integrations; prefer `UnregisterTokenIntent` from
+        [`unregisterToken`](#/paths/~1operations~1start~1unregisterToken/post).
+      deprecated: true
       allOf:
         - $ref: '#/components/schemas/cwpStoredIntentMetadata'
         - $ref: '#/components/schemas/cwpDeleteTokenIntentPayload'
@@ -9902,70 +10069,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/cwpStoredIntentMetadata'
         - $ref: '#/components/schemas/cwpCreateAccountIntentPayload'
-    cwpTransferIntent:
-      allOf:
-        - type: object
-          description: Transfers assets from a source account to destinations.
-          additionalProperties: false
-          required:
-            - Asset
-            - Source
-            - MasterKeyName
-            - DestinationType
-            - DestinationAmounts
-          properties:
-            InitiatorID:
-              type: string
-              description: Initiator identifier.
-            InitiatorName:
-              type: string
-              description: Initiator display name.
-            OperationType:
-              type: string
-              description: Type of operation and intent variant for this request.
-            OperationID:
-              type: string
-              description: Unique operation identifier.
-            Timestamp:
-              type: string
-              format: date-time
-              description: Time associated with the operation.
-            ChainName:
-              type: string
-            CAIP19:
-              type: string
-            Asset:
-              type: string
-            TestNetwork:
-              type: boolean
-            Source:
-              type: string
-            MasterKeyName:
-              type: string
-            DestinationType:
-              type: string
-              enum:
-                - internal
-                - external
-            DestinationAmounts:
-              type: array
-              items:
-                $ref: '#/components/schemas/cwpDestinationAmount'
-            EVM:
-              $ref: '#/components/schemas/cwpEVMSpec'
-            Bitcoin:
-              $ref: '#/components/schemas/cwpBitcoinSpec'
-            Substrate:
-              $ref: '#/components/schemas/cwpSubstrateSpec'
-            Solana:
-              $ref: '#/components/schemas/cwpSolanaSpec'
-            Canton:
-              $ref: '#/components/schemas/cwpCantonSpec'
-            Stellar:
-              $ref: '#/components/schemas/cwpStellarSpec'
-            TVM:
-              $ref: '#/components/schemas/cwpTVMSpec'
-        - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpStakeIntent:
       description: Stored intent shape for `StakeIntent` (responses and search).
       allOf:
@@ -10036,119 +10139,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/cwpStoredIntentMetadata'
         - $ref: '#/components/schemas/cwpDeleteCurrentBatchIntentPayload'
-    cwpCallContractIntent:
-      allOf:
-        - type: object
-          description: Calls a smart contract.
-          additionalProperties: false
-          properties:
-            InitiatorID:
-              type: string
-              description: Initiator identifier.
-            InitiatorName:
-              type: string
-              description: Initiator display name.
-            OperationType:
-              type: string
-              description: Type of operation and intent variant for this request.
-            OperationID:
-              type: string
-              description: Unique operation identifier.
-            Timestamp:
-              type: string
-              format: date-time
-              description: Time associated with the operation.
-            ChainName:
-              type: string
-            CAIP19:
-              type: string
-            Asset:
-              type: string
-            TestNetwork:
-              type: boolean
-            Call:
-              type: string
-              description: Call data (e.g. hex-encoded for EVM).
-            Source:
-              type: string
-            MasterKeyName:
-              type: string
-            ContractAddress:
-              type: string
-            Amount:
-              type: string
-            MaxFee:
-              type: string
-            EVM:
-              $ref: '#/components/schemas/cwpEVMSpec'
-            Bitcoin:
-              $ref: '#/components/schemas/cwpBitcoinSpec'
-            Substrate:
-              $ref: '#/components/schemas/cwpSubstrateSpec'
-            Solana:
-              $ref: '#/components/schemas/cwpSolanaSpec'
-            Canton:
-              $ref: '#/components/schemas/cwpCantonSpec'
-            Stellar:
-              $ref: '#/components/schemas/cwpStellarSpec'
-            TVM:
-              $ref: '#/components/schemas/cwpTVMSpec'
-        - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
-    cwpDeployContractIntent:
-      allOf:
-        - type: object
-          description: Deploys a smart contract.
-          additionalProperties: false
-          properties:
-            InitiatorID:
-              type: string
-              description: Initiator identifier.
-            InitiatorName:
-              type: string
-              description: Initiator display name.
-            OperationType:
-              type: string
-              description: Type of operation and intent variant for this request.
-            OperationID:
-              type: string
-              description: Unique operation identifier.
-            Timestamp:
-              type: string
-              format: date-time
-              description: Time associated with the operation.
-            ChainName:
-              type: string
-            CAIP19:
-              type: string
-            Asset:
-              type: string
-            TestNetwork:
-              type: boolean
-            ContractCode:
-              type: string
-            Source:
-              type: string
-            MasterKeyName:
-              type: string
-            Amount:
-              type: string
-            MaxFee:
-              type: string
-            EVM:
-              $ref: '#/components/schemas/cwpEVMSpec'
-            Bitcoin:
-              $ref: '#/components/schemas/cwpBitcoinSpec'
-            Substrate:
-              $ref: '#/components/schemas/cwpSubstrateSpec'
-            Solana:
-              $ref: '#/components/schemas/cwpSolanaSpec'
-            Canton:
-              $ref: '#/components/schemas/cwpCantonSpec'
-            Stellar:
-              $ref: '#/components/schemas/cwpStellarSpec'
-            TVM:
-              $ref: '#/components/schemas/cwpTVMSpec'
-        - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpGenericSigningIntent:
       description: Stored intent shape for `GenericSigningIntent` (responses and search).
       allOf:
@@ -10178,86 +10168,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/cwpStoredIntentMetadata'
         - $ref: '#/components/schemas/cwpUnregisterChainIntentPayload'
-    cwpRegisterBlockchainNetworkIntent:
-      allOf:
-        - type: object
-          description: Registers a blockchain network and native asset metadata.
-          additionalProperties: false
-          properties:
-            InitiatorID:
-              type: string
-              description: Initiator identifier.
-            InitiatorName:
-              type: string
-              description: Initiator display name.
-            OperationType:
-              type: string
-              description: Type of operation and intent variant for this request.
-            OperationID:
-              type: string
-              description: Unique operation identifier.
-            Timestamp:
-              type: string
-              format: date-time
-              description: Time associated with the operation.
-            NativeSymbol:
-              type: string
-            TestNetwork:
-              type: boolean
-            ProtocolName:
-              type: string
-            NetworkName:
-              type: string
-            MainnetCoinType:
-              type: integer
-            Decimals:
-              type: integer
-            EVMProperties:
-              $ref: '#/components/schemas/cwpEVMPropertiesSearch'
-            BitcoinProperties:
-              $ref: '#/components/schemas/cwpBitcoinPropertiesSearch'
-            SubstrateProperties:
-              $ref: '#/components/schemas/cwpSubstratePropertiesSearch'
-            SolanaProperties:
-              $ref: '#/components/schemas/cwpSolanaPropertiesSearch'
-            TVMProperties:
-              $ref: '#/components/schemas/cwpTVMPropertiesSearch'
-            CantonProperties:
-              $ref: '#/components/schemas/cwpCantonPropertiesSearch'
-            XLMProperties:
-              $ref: '#/components/schemas/cwpXLMPropertiesSearch'
-            XRPProperties:
-              $ref: '#/components/schemas/cwpXRPPropertiesSearch'
-        - $ref: '#/components/schemas/cwpFamilyPropertiesAtMostOne'
-    cwpUnregisterBlockchainNetworkIntent:
-      type: object
-      description: Unregisters a blockchain network.
-      additionalProperties: false
-      properties:
-        InitiatorID:
-          type: string
-          description: Initiator identifier.
-        InitiatorName:
-          type: string
-          description: Initiator display name.
-        OperationType:
-          type: string
-          description: Type of operation and intent variant for this request.
-        OperationID:
-          type: string
-          description: Unique operation identifier.
-        Timestamp:
-          type: string
-          format: date-time
-          description: Time associated with the operation.
-        NativeSymbol:
-          type: string
-        TestNetwork:
-          type: boolean
-        ChainName:
-          type: string
-        CAIP19:
-          type: string
     cwpSetERSPublicKeyIntent:
       description: Stored intent shape for `SetERSPublicKeyIntent` (responses and search).
       allOf:
@@ -10300,7 +10210,10 @@ components:
       description: >-
         Stored intent shape for `SignRawTransactionIntent` (responses and
         search). **Deprecated** for new integrations; prefer `TransactionIntent`
-        from `makeTransaction` with `RawTransaction`.
+        from
+        [`makeTransaction`](#/paths/~1operations~1start~1makeTransaction/post)
+        with `RawTransaction`.
+      deprecated: true
       allOf:
         - $ref: '#/components/schemas/cwpStoredIntentMetadata'
         - $ref: '#/components/schemas/cwpSignRawTransactionIntentPayload'
@@ -10352,13 +10265,12 @@ components:
         - $ref: '#/components/schemas/cwpStoredIntentMetadata'
         - $ref: '#/components/schemas/cwpUpdatePolicyRestrictionIntentPayload'
     cwpIntentItem:
-      description: Operation intent.
+      description: >-
+        Operation intent for startable operation types and stored operation
+        responses.
       discriminator:
         propertyName: OperationType
         mapping:
-          add ERC20 asset: '#/components/schemas/cwpAddERC20Intent'
-          add SPL token: '#/components/schemas/cwpAddSPLTokenIntent'
-          add canton token: '#/components/schemas/cwpAddCantonTokenIntent'
           register token: '#/components/schemas/cwpRegisterTokenIntent'
           unregister token: '#/components/schemas/cwpUnregisterTokenIntent'
           delete token: '#/components/schemas/cwpDeleteTokenIntent'
@@ -10368,7 +10280,6 @@ components:
           backup master key: '#/components/schemas/cwpBackupMasterKeyIntent'
           create master key: '#/components/schemas/cwpCreateMasterKeyIntent'
           create account: '#/components/schemas/cwpCreateAccountIntent'
-          transfer: '#/components/schemas/cwpTransferIntent'
           stake: '#/components/schemas/cwpStakeIntent'
           unstake: '#/components/schemas/cwpUnstakeIntent'
           register user: '#/components/schemas/cwpRegisterUserIntent'
@@ -10382,15 +10293,11 @@ components:
           create batch: '#/components/schemas/cwpCreateBatchIntent'
           finish current batch: '#/components/schemas/cwpFinishCurrentBatchIntent'
           delete current batch: '#/components/schemas/cwpDeleteCurrentBatchIntent'
-          call smart contract: '#/components/schemas/cwpCallContractIntent'
-          deploy smart contract: '#/components/schemas/cwpDeployContractIntent'
           generic signing: '#/components/schemas/cwpGenericSigningIntent'
           consolidate funds: '#/components/schemas/cwpConsolidateFundsIntent'
           fund subaddresses: '#/components/schemas/cwpFundSubAddressesIntent'
           register custom chain: '#/components/schemas/cwpRegisterCustomChainIntent'
           unregister chain: '#/components/schemas/cwpUnregisterChainIntent'
-          register blockchain network: '#/components/schemas/cwpRegisterBlockchainNetworkIntent'
-          unregister blockchain network: '#/components/schemas/cwpUnregisterBlockchainNetworkIntent'
           set ers public key: '#/components/schemas/cwpSetERSPublicKeyIntent'
           make transaction: '#/components/schemas/cwpTransactionIntent'
           sponsor: '#/components/schemas/cwpSponsorIntent'
@@ -10404,9 +10311,6 @@ components:
           update config restriction: '#/components/schemas/cwpUpdateConfigRestrictionIntent'
           update policy restriction: '#/components/schemas/cwpUpdatePolicyRestrictionIntent'
       oneOf:
-        - $ref: '#/components/schemas/cwpAddERC20Intent'
-        - $ref: '#/components/schemas/cwpAddSPLTokenIntent'
-        - $ref: '#/components/schemas/cwpAddCantonTokenIntent'
         - $ref: '#/components/schemas/cwpRegisterTokenIntent'
         - $ref: '#/components/schemas/cwpUnregisterTokenIntent'
         - $ref: '#/components/schemas/cwpDeleteTokenIntent'
@@ -10416,7 +10320,6 @@ components:
         - $ref: '#/components/schemas/cwpBackupMasterKeyIntent'
         - $ref: '#/components/schemas/cwpCreateMasterKeyIntent'
         - $ref: '#/components/schemas/cwpCreateAccountIntent'
-        - $ref: '#/components/schemas/cwpTransferIntent'
         - $ref: '#/components/schemas/cwpStakeIntent'
         - $ref: '#/components/schemas/cwpUnstakeIntent'
         - $ref: '#/components/schemas/cwpRegisterUserIntent'
@@ -10430,15 +10333,11 @@ components:
         - $ref: '#/components/schemas/cwpCreateBatchIntent'
         - $ref: '#/components/schemas/cwpFinishCurrentBatchIntent'
         - $ref: '#/components/schemas/cwpDeleteCurrentBatchIntent'
-        - $ref: '#/components/schemas/cwpCallContractIntent'
-        - $ref: '#/components/schemas/cwpDeployContractIntent'
         - $ref: '#/components/schemas/cwpGenericSigningIntent'
         - $ref: '#/components/schemas/cwpConsolidateFundsIntent'
         - $ref: '#/components/schemas/cwpFundSubAddressesIntent'
         - $ref: '#/components/schemas/cwpRegisterCustomChainIntent'
         - $ref: '#/components/schemas/cwpUnregisterChainIntent'
-        - $ref: '#/components/schemas/cwpRegisterBlockchainNetworkIntent'
-        - $ref: '#/components/schemas/cwpUnregisterBlockchainNetworkIntent'
         - $ref: '#/components/schemas/cwpSetERSPublicKeyIntent'
         - $ref: '#/components/schemas/cwpTransactionIntent'
         - $ref: '#/components/schemas/cwpSponsorIntent'
@@ -11068,7 +10967,7 @@ components:
           description: Restriction identifier.
         Approvers:
           type: array
-          description: Approvers required if the restriction matches.
+          description: Approvers required when the restriction applies.
           items:
             $ref: '#/components/schemas/cwpApproversByGroups'
     cwpPolicyRestriction:
@@ -11082,7 +10981,7 @@ components:
           description: Restriction identifier.
         Approvers:
           type: array
-          description: Approvers required if the restriction matches.
+          description: Approvers required when the restriction applies.
           items:
             $ref: '#/components/schemas/cwpApproversByGroups'
     cwpOperationTypesResponse:
@@ -11108,113 +11007,121 @@ components:
           description: Restriction identifier.
         Approvers:
           type: array
-          description: Approvers required if the restriction matches.
+          description: Approvers required when the restriction applies.
           items:
             $ref: '#/components/schemas/cwpApproversByGroups'
         Amount:
-          $ref: '#/components/schemas/cwpAmountFilter'
+          $ref: '#/components/schemas/cwpAmountCriterion'
         Fee:
-          $ref: '#/components/schemas/cwpAmountFilter'
+          $ref: '#/components/schemas/cwpAmountCriterion'
         Symbol:
-          $ref: '#/components/schemas/cwpValueFilterString'
+          $ref: '#/components/schemas/cwpValueCriterionString'
         Source:
-          $ref: '#/components/schemas/cwpValueFilterSource'
+          $ref: '#/components/schemas/cwpValueCriterionSource'
         Destination:
-          $ref: '#/components/schemas/cwpValueFilterDestination'
+          $ref: '#/components/schemas/cwpValueCriterionDestination'
         ExternalDestination:
-          description: A non-null empty filter matches any external destination.
+          description: >-
+            A non-null empty ExternalDestination criterion is satisfied for any
+            external destination.
           allOf:
-            - $ref: '#/components/schemas/cwpValueFilterString'
+            - $ref: '#/components/schemas/cwpValueCriterionString'
         TransactionFunction:
-          $ref: '#/components/schemas/cwpValueFilterTransactionFunction'
+          $ref: '#/components/schemas/cwpValueCriterionTransactionFunction'
         TestNetwork:
           type: boolean
-    cwpValueFilterString:
+    cwpValueCriterionString:
       type: object
       additionalProperties: false
       description: >-
-        Matches values against one of two lists. At most one of Only or Except
-        can be non-empty. Only matches if any listed value matches. Except
-        matches if no listed value matches (denylist). If both lists are empty,
-        the filter matches any value.
+        Satisfied if the input value matches the Only or Except list. At most
+        one of Only or Except can be non-empty. The Only list is satisfied if
+        the input matches any listed value. The Except list is satisfied if the
+        input matches none of the listed values (denylist). If both lists are
+        empty, the criterion is satisfied for any value.
       properties:
         Only:
           type: array
-          description: Match if any listed value matches.
+          description: Satisfied if the input matches any listed value.
           items:
             type: string
         Except:
           type: array
-          description: Match if no listed value matches.
+          description: Satisfied if the input matches none of the listed values.
           items:
             type: string
-    cwpValueFilterSource:
+    cwpValueCriterionSource:
       type: object
       additionalProperties: false
       description: >-
-        Matches values against one of two lists. At most one of Only or Except
-        can be non-empty. Only matches if any listed value matches. Except
-        matches if no listed value matches (denylist). If both lists are empty,
-        the filter matches any value.
+        Satisfied if the input value matches the Only or Except list. At most
+        one of Only or Except can be non-empty. The Only list is satisfied if
+        the input matches any listed value. The Except list is satisfied if the
+        input matches none of the listed values (denylist). If both lists are
+        empty, the criterion is satisfied for any value.
       properties:
         Only:
           type: array
-          description: Match if any listed value matches.
+          description: Satisfied if the input matches any listed value.
           items:
             $ref: '#/components/schemas/cwpSource'
         Except:
           type: array
-          description: Match if no listed value matches.
+          description: Satisfied if the input matches none of the listed values.
           items:
             $ref: '#/components/schemas/cwpSource'
-    cwpValueFilterDestination:
+    cwpValueCriterionDestination:
       type: object
       additionalProperties: false
       description: >-
-        Matches values against one of two lists. At most one of Only or Except
-        can be non-empty. Only matches if any listed value matches. Except
-        matches if no listed value matches (denylist). If both lists are empty,
-        the filter matches any value.
+        Satisfied if the input value matches the Only or Except list. At most
+        one of Only or Except can be non-empty. The Only list is satisfied if
+        the input matches any listed value. The Except list is satisfied if the
+        input matches none of the listed values (denylist). If both lists are
+        empty, the criterion is satisfied for any value.
       properties:
         Only:
           type: array
-          description: Match if any listed value matches.
+          description: Satisfied if the input matches any listed value.
           items:
             $ref: '#/components/schemas/cwpDestination'
         Except:
           type: array
-          description: Match if no listed value matches.
+          description: Satisfied if the input matches none of the listed values.
           items:
             $ref: '#/components/schemas/cwpDestination'
-    cwpValueFilterTransactionFunction:
+    cwpValueCriterionTransactionFunction:
       type: object
       additionalProperties: false
       description: >-
-        Matches values against one of two lists. At most one of Only or Except
-        can be non-empty. Only matches if any listed value matches. Except
-        matches if no listed value matches (denylist). If both lists are empty,
-        the filter matches any value. Use names from `GET
-        /restrictions/functionNames`.
+        Satisfied if the transaction function matches the Only or Except list.
+        At most one of Only or Except can be non-empty. The Only list is
+        satisfied if the input matches any listed value. The Except list is
+        satisfied if the input matches none of the listed values (denylist). If
+        both lists are empty, the criterion is satisfied for any value. Use
+        function names from `GET /restrictions/functionNames`.
       properties:
         Only:
           type: array
-          description: Match if any listed value matches.
+          description: Satisfied if the input matches any listed value.
           items:
             type: string
         Except:
           type: array
-          description: Match if no listed value matches.
+          description: Satisfied if the input matches none of the listed values.
           items:
             type: string
-    cwpAmountFilter:
+    cwpAmountCriterion:
       type: object
       additionalProperties: false
-      description: Amount comparison filter. Currency is required when Above is non-zero.
+      description: >-
+        Satisfied if the transaction amount exceeds Above (after currency
+        conversion). Currency is required when Above is non-zero.
       properties:
         Above:
           type: number
           format: double
-          description: Match if amount is greater than this value.
+          description: Criteria is satisfied if the amount exceeds this value.
         Currency:
           type: string
           description: Currency for Above.
@@ -11315,10 +11222,21 @@ components:
         - Decimals
       description: Registers a token by CAIP-19.
     cwpRegisterTokenStartRequest:
-      description: Registers a token by CAIP-19.
+      description: >-
+        Composes `RegisterTokenIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpRegisterTokenIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpRegisterCustomChainIntentPayload:
       type: object
       additionalProperties: false
@@ -11342,11 +11260,20 @@ components:
         CAIP-19.
     cwpRegisterCustomChainStartRequest:
       description: >-
-        Registers a custom chain and native asset; CAIP-2 is derived from
-        CAIP-19.
+        Composes `RegisterCustomChainIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpRegisterCustomChainIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpUnregisterTokenIntentPayload:
       type: object
       additionalProperties: false
@@ -11360,10 +11287,21 @@ components:
         - CAIP19
       description: Removes a token previously registered via `registerToken`.
     cwpUnregisterTokenStartRequest:
-      description: Removes a token previously registered via `registerToken`.
+      description: >-
+        Composes `UnregisterTokenIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpUnregisterTokenIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpUnregisterChainIntentPayload:
       type: object
       additionalProperties: false
@@ -11378,11 +11316,20 @@ components:
         if non-native tokens are still registered on the chain.
     cwpUnregisterChainStartRequest:
       description: >-
-        Removes a chain previously registered via `registerCustomChain`. Fails
-        if non-native tokens are still registered on the chain.
+        Composes `UnregisterChainIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpUnregisterChainIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpUpdateConfigRestrictionIntentPayload:
       type: object
       additionalProperties: false
@@ -11398,10 +11345,21 @@ components:
             - Delete
       description: Adds or removes config restrictions.
     cwpUpdateConfigRestrictionStartRequest:
-      description: Adds or removes config restrictions.
+      description: >-
+        Composes `UpdateConfigRestrictionIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpUpdateConfigRestrictionIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpUpdatePolicyRestrictionIntentPayload:
       type: object
       additionalProperties: false
@@ -11417,10 +11375,21 @@ components:
             - Delete
       description: Adds or removes policy restrictions.
     cwpUpdatePolicyRestrictionStartRequest:
-      description: Adds or removes policy restrictions.
+      description: >-
+        Composes `UpdatePolicyRestrictionIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpUpdatePolicyRestrictionIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpUpdateTransactionRestrictionIntentPayload:
       type: object
       additionalProperties: false
@@ -11436,10 +11405,21 @@ components:
             - Delete
       description: Adds or removes transaction restrictions.
     cwpUpdateTransactionRestrictionStartRequest:
-      description: Adds or removes transaction restrictions.
+      description: >-
+        Composes `UpdateTransactionRestrictionIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpUpdateTransactionRestrictionIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpTransactionIntentPayload:
       type: object
       description: >-
@@ -11507,10 +11487,23 @@ components:
             - Source
             - RawTransaction
     cwpMakeTransactionStartRequest:
+      type: object
+      description: >-
+        Composes `TransactionIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`). Uses OpenAPI
+        3.1 `unevaluatedProperties` to merge metadata and payload. At most one
+        of `EVM`, `Bitcoin`, `Substrate`, `Solana`, `Canton`, `Stellar`, or
+        `TVM` may be set.
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpTransactionIntentPayload'
-        - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpDeleteTokenIntentPayload:
       type: object
       additionalProperties: false
@@ -11525,12 +11518,28 @@ components:
           type: string
       required:
         - Symbol
-      description: Deletes a token for an asset.
+      description: >-
+        **Deprecated.** Legacy symbol-based payload for `deleteToken`. Prefer
+        `UnregisterTokenIntentPayload` with required `CAIP19`.
+      deprecated: true
     cwpDeleteTokenStartRequest:
-      description: Deletes a token for an asset.
+      description: >-
+        **Deprecated.** Prefer `UnregisterTokenStartRequest`. Composes
+        `DeleteTokenIntentPayload` plus optional `StartOperationMetadata`
+        (`OperationID`, `InitiatorID`).
+      deprecated: true
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpDeleteTokenIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpAssociateToSPLTokenIntentPayload:
       type: object
       additionalProperties: false
@@ -11569,10 +11578,22 @@ components:
         - Source
       description: Associates a wallet account with an SPL token account.
     cwpAssociateToSPLTokenStartRequest:
-      description: Associates a wallet account with an SPL token account.
+      description: >-
+        Composes `AssociateToSPLTokenIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`). Enforces
+        `ChainParametersAtMostOne`.
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpAssociateToSPLTokenIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpAssociateNonceAccountIntentPayload:
       type: object
@@ -11616,10 +11637,22 @@ components:
         - Source
       description: Associates a nonce account (Solana); only the main account may run this.
     cwpAssociateNonceAccountStartRequest:
-      description: Associates a nonce account (Solana); only the main account may run this.
+      description: >-
+        Composes `AssociateNonceAccountIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`). Enforces
+        `ChainParametersAtMostOne`.
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpAssociateNonceAccountIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpActivateStellarAddressIntentPayload:
       type: object
@@ -11662,10 +11695,22 @@ components:
         - Destination
       description: Funds and activates a Stellar address.
     cwpActivateStellarAddressStartRequest:
-      description: Funds and activates a Stellar address.
+      description: >-
+        Composes `ActivateStellarAddressIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`). Enforces
+        `ChainParametersAtMostOne`.
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpActivateStellarAddressIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpBackupMasterKeyIntentPayload:
       type: object
@@ -11678,10 +11723,21 @@ components:
         - Name
       description: Backs up a master key.
     cwpBackupMasterKeyStartRequest:
-      description: Backs up a master key.
+      description: >-
+        Composes `BackupMasterKeyIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpBackupMasterKeyIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpCreateMasterKeyIntentPayload:
       type: object
       additionalProperties: false
@@ -11693,10 +11749,21 @@ components:
         - Name
       description: Creates a master key.
     cwpCreateMasterKeyStartRequest:
-      description: Creates a master key.
+      description: >-
+        Composes `CreateMasterKeyIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpCreateMasterKeyIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpCreateAccountIntentPayload:
       type: object
       additionalProperties: false
@@ -11704,17 +11771,30 @@ components:
         Name:
           type: string
           description: Account name.
+          pattern: ^\w+( \w+)*$
         MasterKey:
           type: string
+          pattern: ^\w+( \w+)*$
       required:
         - Name
         - MasterKey
       description: Creates an account on a master key.
     cwpCreateAccountStartRequest:
-      description: Creates an account on a master key.
+      description: >-
+        Composes `CreateAccountIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpCreateAccountIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpAttachMasterKeyIntentPayload:
       type: object
       additionalProperties: false
@@ -11723,18 +11803,33 @@ components:
           type: string
         ExternalPairingMessages:
           type: array
+          minItems: 1
           items:
             $ref: '#/components/schemas/cwpExternalPairingMessageSearch'
         PairingChecksum:
           type: string
       required:
         - Name
-      description: Attaches an external master key using pairing messages.
+        - ExternalPairingMessages
+      description: >-
+        Attaches an external master key using pairing messages. At least one
+        pairing message is required.
     cwpAttachMasterKeyStartRequest:
-      description: Attaches an external master key using pairing messages.
+      description: >-
+        Composes `AttachMasterKeyIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpAttachMasterKeyIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpRegisterUserIntentPayload:
       type: object
       additionalProperties: false
@@ -11748,10 +11843,21 @@ components:
         - UserName
       description: Registers a user.
     cwpRegisterUserStartRequest:
-      description: Registers a user.
+      description: >-
+        Composes `RegisterUserIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpRegisterUserIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpSetUserPublicKeyIntentPayload:
       type: object
       additionalProperties: false
@@ -11766,10 +11872,21 @@ components:
         - PublicKey
       description: Sets a user's public key.
     cwpSetUserPublicKeyStartRequest:
-      description: Sets a user's public key.
+      description: >-
+        Composes `SetUserPublicKeyIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpSetUserPublicKeyIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpDeleteUserIntentPayload:
       type: object
       additionalProperties: false
@@ -11782,10 +11899,21 @@ components:
         - UserID
       description: Deletes a user.
     cwpDeleteUserStartRequest:
-      description: Deletes a user.
+      description: >-
+        Composes `DeleteUserIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpDeleteUserIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpResetUserIntentPayload:
       type: object
       additionalProperties: false
@@ -11798,10 +11926,21 @@ components:
         - UserID
       description: Resets a user.
     cwpResetUserStartRequest:
-      description: Resets a user.
+      description: >-
+        Composes `ResetUserIntentPayload` plus optional `StartOperationMetadata`
+        (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpResetUserIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpUpdateGroupIntentPayload:
       type: object
       additionalProperties: false
@@ -11822,10 +11961,21 @@ components:
         - Group
       description: Updates group membership.
     cwpUpdateGroupStartRequest:
-      description: Updates group membership.
+      description: >-
+        Composes `UpdateGroupIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpUpdateGroupIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpRenameGroupIntentPayload:
       type: object
       additionalProperties: false
@@ -11846,11 +11996,20 @@ components:
         name.
     cwpRenameGroupStartRequest:
       description: >-
-        Renames a group and updates all restriction references to the old group
-        name.
+        Composes `RenameGroupIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpRenameGroupIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpUpdateRatesIntentPayload:
       type: object
       additionalProperties: false
@@ -11861,10 +12020,21 @@ components:
             $ref: '#/components/schemas/cwpRateUpdateSearch'
       description: Updates asset USD rates.
     cwpUpdateRatesStartRequest:
-      description: Updates asset USD rates.
+      description: >-
+        Composes `UpdateRatesIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpUpdateRatesIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpStakeIntentPayload:
       type: object
       additionalProperties: false
@@ -11921,10 +12091,21 @@ components:
         - WithdrawalAddress
       description: Stakes assets to a validator.
     cwpStakeStartRequest:
-      description: Stakes assets to a validator.
+      description: >-
+        Composes `StakeIntentPayload` plus optional `StartOperationMetadata`
+        (`OperationID`, `InitiatorID`). Enforces `ChainParametersAtMostOne`.
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpStakeIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpUnstakeIntentPayload:
       type: object
@@ -11955,10 +12136,21 @@ components:
         - ValidatorAddresses
       description: Unstakes from given validators.
     cwpUnstakeStartRequest:
-      description: Unstakes from given validators.
+      description: >-
+        Composes `UnstakeIntentPayload` plus optional `StartOperationMetadata`
+        (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpUnstakeIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpGenericSigningIntentPayload:
       type: object
       additionalProperties: false
@@ -11976,21 +12168,29 @@ components:
         TypeOfSigning:
           type: string
         Source:
-          type: string
-        MasterKeyName:
-          type: string
+          $ref: '#/components/schemas/cwpAddressSpec'
       required:
         - Asset
         - DataToSign
         - TypeOfSigning
         - Source
-        - MasterKeyName
       description: Signs arbitrary data.
     cwpGenericSigningStartRequest:
-      description: Signs arbitrary data.
+      description: >-
+        Composes `GenericSigningIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpGenericSigningIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpSignRawTransactionIntentPayload:
       type: object
       additionalProperties: false
@@ -12023,11 +12223,20 @@ components:
         - RawTransaction
     cwpSignRawTransactionStartRequest:
       description: >-
-        **Deprecated.** Use `MakeTransactionStartRequest` with `RawTransaction`
-        instead.
+        **Deprecated.** Prefer `MakeTransactionStartRequest` with
+        `RawTransaction`. Composes `SignRawTransactionIntentPayload` plus
+        optional `StartOperationMetadata` (`OperationID`, `InitiatorID`).
       deprecated: true
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpSignRawTransactionIntentPayload'
     cwpSponsorIntentPayload:
       type: object
@@ -12041,10 +12250,8 @@ components:
           type: string
         TestNetwork:
           type: boolean
-        MasterKeyName:
-          type: string
-        Account:
-          type: string
+        Source:
+          $ref: '#/components/schemas/cwpAddressSpec'
         ContractAddress:
           type: string
           description: Target contract; empty means code-reset.
@@ -12064,18 +12271,27 @@ components:
           $ref: '#/components/schemas/cwpTVMSpec'
       required:
         - Asset
-        - MasterKeyName
-        - Account
+        - Source
+        - EVM
       description: >-
-        Sponsors contract calls (EIP-7702); requires EVMSpec Data and
-        authorizations as applicable.
+        Sponsors contract calls (EIP-7702). Requires `EVM` with non-empty
+        `EIP7702Authorizations` and call `Data` as applicable.
     cwpSponsorStartRequest:
       description: >-
-        Sponsors contract calls (EIP-7702); requires EVMSpec Data and
-        authorizations as applicable.
+        Composes `SponsorIntentPayload` plus optional `StartOperationMetadata`
+        (`OperationID`, `InitiatorID`). Enforces `ChainParametersAtMostOne`.
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpSponsorIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpConsolidateFundsIntentPayload:
       type: object
@@ -12121,10 +12337,22 @@ components:
         - Amount
       description: Consolidates funds from a sub-address to the main address.
     cwpConsolidateFundsStartRequest:
-      description: Consolidates funds from a sub-address to the main address.
+      description: >-
+        Composes `ConsolidateFundsIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`). Enforces
+        `ChainParametersAtMostOne`.
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpConsolidateFundsIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpFundSubAddressesIntentPayload:
       type: object
@@ -12168,10 +12396,22 @@ components:
         - Account
       description: Funds multiple sub-addresses from the main address.
     cwpFundSubAddressesStartRequest:
-      description: Funds multiple sub-addresses from the main address.
+      description: >-
+        Composes `FundSubAddressesIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`). Enforces
+        `ChainParametersAtMostOne`.
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpFundSubAddressesIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpGenerateConsolidationDataIntentPayload:
       type: object
@@ -12201,10 +12441,21 @@ components:
         - SubAddressData
       description: Generates consolidation transaction data for sub-addresses.
     cwpGenerateConsolidationDataStartRequest:
-      description: Generates consolidation transaction data for sub-addresses.
+      description: >-
+        Composes `GenerateConsolidationDataIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpGenerateConsolidationDataIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpCreateBatchIntentPayload:
       type: object
       additionalProperties: false
@@ -12217,10 +12468,21 @@ components:
         - MasterKey
       description: Creates a signing batch for a master key.
     cwpCreateBatchStartRequest:
-      description: Creates a signing batch for a master key.
+      description: >-
+        Composes `CreateBatchIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpCreateBatchIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpFinishCurrentBatchIntentPayload:
       type: object
       additionalProperties: false
@@ -12235,10 +12497,21 @@ components:
         - MasterKey
       description: Finishes the current batch with partial signatures.
     cwpFinishCurrentBatchStartRequest:
-      description: Finishes the current batch with partial signatures.
+      description: >-
+        Composes `FinishCurrentBatchIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpFinishCurrentBatchIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpDeleteCurrentBatchIntentPayload:
       type: object
       additionalProperties: false
@@ -12249,10 +12522,21 @@ components:
         - MasterKey
       description: Deletes the current batch for a master key.
     cwpDeleteCurrentBatchStartRequest:
-      description: Deletes the current batch for a master key.
+      description: >-
+        Composes `DeleteCurrentBatchIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpDeleteCurrentBatchIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpSetERSPublicKeyIntentPayload:
       type: object
       additionalProperties: false
@@ -12264,10 +12548,21 @@ components:
         - Key
       description: Sets the ERS RSA public key (PKIX DER).
     cwpSetERSPublicKeyStartRequest:
-      description: Sets the ERS RSA public key (PKIX DER).
+      description: >-
+        Composes `SetERSPublicKeyIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpSetERSPublicKeyIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpAllocationIntentPayload:
       type: object
       additionalProperties: false
@@ -12326,10 +12621,22 @@ components:
         - SettlementDeadline
       description: Creates a Canton allocation (settlement workflow).
     cwpAllocationStartRequest:
-      description: Creates a Canton allocation (settlement workflow).
+      description: >-
+        Composes `AllocationIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`). Enforces
+        `ChainParametersAtMostOne`.
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpAllocationIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpCantonEnrollmentIntentPayload:
       type: object
@@ -12350,10 +12657,21 @@ components:
         - Source
       description: Enrolls an external party on the Canton ledger.
     cwpCantonEnrollmentStartRequest:
-      description: Enrolls an external party on the Canton ledger.
+      description: >-
+        Composes `CantonEnrollmentIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpCantonEnrollmentIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpCantonPreapprovalIntentPayload:
       type: object
       additionalProperties: false
@@ -12373,10 +12691,21 @@ components:
         - Source
       description: Creates a transfer preapproval for a Canton party.
     cwpCantonPreapprovalStartRequest:
-      description: Creates a transfer preapproval for a Canton party.
+      description: >-
+        Composes `CantonPreapprovalIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`).
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpCantonPreapprovalIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
     cwpEndInvestorOnboardingOfferIntentPayload:
       type: object
       additionalProperties: false
@@ -12430,13 +12759,21 @@ components:
         `TVM` may be set (see `ChainParametersAtMostOne`).
     cwpEndInvestorOnboardingOfferStartRequest:
       description: >-
-        Exercises a choice on a Canton end-investor-onboarding offer.
-        Blockchain-specific options use the same union as other intents: at most
-        one of `EVM`, `Bitcoin`, `Substrate`, `Solana`, `Canton`, `Stellar`, or
-        `TVM` may be set (see `ChainParametersAtMostOne`).
+        Composes `EndInvestorOnboardingOfferIntentPayload` plus optional
+        `StartOperationMetadata` (`OperationID`, `InitiatorID`). Enforces
+        `ChainParametersAtMostOne`.
+      type: object
+      unevaluatedProperties: false
+      properties:
+        OperationID:
+          type: string
+          description: Unique operation identifier.
+        InitiatorID:
+          type: string
+          description: Initiator identifier.
       allOf:
-        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpEndInvestorOnboardingOfferIntentPayload'
+        - $ref: '#/components/schemas/cwpStartOperationMetadata'
         - $ref: '#/components/schemas/cwpChainParametersAtMostOne'
     cwpTransactionIntentEnrichment:
       type: object

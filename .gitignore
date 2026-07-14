@@ -1,10 +1,14 @@
-.venv
-cdk.out
-.pytest_cache
-.DS_Store
-package-lock.json
-__pycache__
-dist
-node_modules
+node_modules/
+dist/
 .env
-iv-sdk*
+.DS_Store
+__pycache__/
+.pytest_cache/
+.venv/
+cdk.out/
+
+# Generated SDKs (run `npm run generate` after install)
+iv-sdk-typescript/
+iv-sdk-canton-signing/
+iv-sdk-java/
+iv-sdk-go/

@@ -2,12 +2,12 @@ openapi: 3.1.0
 info:
   title: Canton Signing Driver API
   description: |
-    HTTP JSON API for Canton transaction signing via MPC. Mounted at `/api/cwp/canton`
+    HTTP JSON API for Canton transaction signing. Mounted at `/api/cwp/canton`
     on the Institutional Vault gateway.
 
-    The Signing Driver provides key management and Ed25519 MPC signing for Canton ledger
-    transactions. Keys are derived from a hierarchical deterministic master key.
-    Signing operations are asynchronous — `signTransaction` returns immediately with a
+    Provides key management and Ed25519 signing for Canton ledger transactions.
+    Keys are derived from a hierarchical deterministic master key.
+    Signing operations are asynchronous - `signTransaction` returns immediately with a
     `pending` status; poll with `getTransaction` until the status transitions to `signed`, `rejected`, or `failed`.
   version: 0.1.0
   license:
@@ -28,8 +28,8 @@ paths:
         `pending`). Poll `POST /getTransaction` with the returned `txId` to track
         progress.
 
-        Internally creates a `SignRawTransactionIntent` / `make_transaction` MPA
-        operation. The `userIdentifier` must match a registered MPA user id (JWT
+        Internally creates a signing operation. The `userIdentifier` must match a
+        registered Vault user id (JWT
         email).
       operationId: signTransaction
       requestBody:
@@ -122,7 +122,7 @@ paths:
       summary: List signing keys
       description: |
         List all Ed25519 public keys available for signing under the specified
-        master key and CAIP-2 chain. Each key corresponds to one MPA account.
+        master key and CAIP-2 chain. Each key corresponds to one Vault account.
         Public keys are returned base64-encoded.
       operationId: getKeys
       requestBody:
@@ -151,7 +151,7 @@ paths:
         - Keys
       summary: Create a new signing key
       description: |
-        Create a new MPA account (and derived Ed25519 key) under the specified
+        Create a new Vault account (and derived Ed25519 key) under the specified
         master key. This is a synchronous operation — the call blocks until key
         generation completes.
 
@@ -247,7 +247,7 @@ components:
             userIdentifier:
               type: string
               description: |
-                Identity of the initiating user. Must match a registered MPA user
+                Identity of the initiating user. Must match a registered Vault user
                 ID (the JWT `email` claim).
               example: alice@example.com
 
