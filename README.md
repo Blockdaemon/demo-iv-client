@@ -5,7 +5,7 @@ TypeScript examples demonstrating programmatic use of the Institutional Vault [C
 ## Prerequisites
 
 - **Node.js** >= 18
-- An Institutional Vault instance with at least one account and registered chain
+- An Institutional Vault instance (examples include setup scripts to register a chain, create an account, and derive an address)
 - A **API User key** or **Bearer JWT** with Admin or MarketOps role
 - For Canton examples: participant JSON Ledger API access with OAuth client credentials
 
@@ -25,6 +25,9 @@ npm run evm:transfer       # run the ERC-20 transfer example
 
 | Script                                                         | Command                               | Description                                              |
 | -------------------------------------------------------------- | ------------------------------------- | -------------------------------------------------------- |
+| [Register custom chain](register-custom-chain.ts)              | `npm run cwp:register-chain`          | Register a customer EVM chain + native asset             |
+| [Create account](create-account.ts)                            | `npm run cwp:create-account`          | Create a named account under a master key                |
+| [Get address](get-address.ts)                                  | `npm run cwp:get-address`             | Derive an address for an account (feeds later scripts)   |
 | [EVM ERC-20 transfer](makeTransaction-evm-data-transfer.ts)    | `npm run evm:transfer`                | Send ERC-20 tokens via `EVM.Data` calldata               |
 | [EVM ERC-20 mint](makeTransaction-evm-data-mint.ts)            | `npm run evm:mint`                    | Mint ERC-20 tokens via `EVM.Data` calldata               |
 | [EVM contract deploy](makeTransaction-raw-deploycontract.ts)   | `npm run evm:deploy`                  | Sign-only deploy; client broadcasts via RPC              |
@@ -32,7 +35,9 @@ npm run evm:transfer       # run the ERC-20 transfer example
 | [Canton create external party](canton-create-externalparty.ts) | `npm run canton:create-externalparty` | Create an Ed25519 external party on a Canton participant |
 
 
-Each example has a companion doc in [`docs/`](docs/) describing required env vars, policy posture, and success criteria.
+Setup order for a new custom chain: `cwp:register-chain` → `cwp:create-account` → `cwp:get-address` (then copy `IV_SOURCE_ADDRESS` into `.env` for EVM examples).
+
+Each example has a companion doc in `[docs/](docs/)` describing required env vars, policy posture, and success criteria.
 
 ## OpenAPI specs
 
