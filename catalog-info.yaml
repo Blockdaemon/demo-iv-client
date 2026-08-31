@@ -1,0 +1,18 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: demo-iv-client
+  description: Institutional Vault Client SDK examples
+  annotations:
+    blockdaemon.com/repo: github.com/Blockdaemon/demo-iv-client
+  labels:
+    provider: github
+    application: demo-iv-client
+    criticality: low
+    origin: manual
+    cost_center: wallet_whitelabel
+spec:
+  type: service
+  lifecycle: active
+  owner: group:wallet
+  system: institutional-vault
