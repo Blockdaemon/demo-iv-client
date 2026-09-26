@@ -1,11 +1,12 @@
 openapi: 3.1.0
 info:
   version: 1.0.0
-  title: Institutional Vault
-  description: Institutional Vault API - wallet management and Core Wallet Platform (CWP)
+  title: Institutional Wallet
+  description: A must-have wallet for all institutions
   contact:
     name: Blockdaemon
-    url: https://vault.docs.blockdaemon.com
+    email: info@blockdaemon.com
+    url: https://blockdaemon.com
 servers:
   - url: https://{domain}
     variables:
@@ -15,14 +16,10 @@ servers:
 tags:
   - name: Assets
     x-displayName: Assets
-  - name: Audit
-    x-displayName: Audit
   - name: Compliance
     x-displayName: Compliance
   - name: Config
     x-displayName: Config
-  - name: Groups
-    x-displayName: Groups
   - name: Cold Wallet
     x-displayName: Cold Wallet
   - name: Users
@@ -35,8 +32,6 @@ tags:
     x-displayName: Operations
   - name: Staking
     x-displayName: Staking
-  - name: System User
-    x-displayName: System User
   - name: Tenants
     x-displayName: Tenants
   - name: Transactions
@@ -49,12 +44,20 @@ tags:
   - name: Policies
     description: Read policy restrictions and start restriction update operations.
     x-displayName: Policies
+  - name: Groups
+    description: Create, update, and rename approver groups.
+    x-displayName: Groups
   - name: Events
     description: Subscribe to events over WebSocket.
     x-displayName: Events
   - name: Prices
     description: Look up USD prices for registered assets.
     x-displayName: Prices
+  - name: Approvals
+    description: >-
+      Register approver public keys, list pending approvals, approve or reject
+      operations, and manage push notification device tokens.
+    x-displayName: Approvals
   - name: Balances
     x-displayName: Balances
   - name: WalletConnect
@@ -380,6 +383,7 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
   /api/assets/getExchangeRates:
     get:
+      deprecated: true
       tags:
         - Assets
       summary: Get a List of Assets and Their Exchange Rate
@@ -633,75 +637,6 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
         '500':
           description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/audit/export.zip:
-    get:
-      tags:
-        - Audit
-      summary: Export Audit Logs
-      description: Export audit logs based on provided startDate and endDate as zip
-      operationId: ExportAudit
-      parameters:
-        - schema:
-            type: string
-          description: Start date parameter for audit logs export
-          name: start_date
-          in: query
-          required: true
-        - schema:
-            type: string
-          description: End date parameter for audit logs export
-          name: end_date
-          in: query
-          required: true
-        - schema:
-            type: string
-          description: Filter audit logs to a specific operation by its ID
-          name: operation_id
-          in: query
-        - schema:
-            type: string
-          description: >-
-            Comma-separated list of columns you want to appear in the final
-            output .csv
-          name: columns
-          in: query
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AuditFileResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
           content:
             application/json:
               schema:
@@ -975,711 +910,6 @@ paths:
                 $ref: '#/components/schemas/TenantConfigResponse'
         '500':
           description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/groups:
-    get:
-      tags:
-        - Groups
-      summary: Get a List of Groups
-      description: >-
-        Retrieves all groups. If no sorting parameters are given, the default
-        sorting is ascending by name.
-      operationId: getAllGroups
-      parameters:
-        - schema:
-            enum:
-              - crypto
-              - date
-            type: string
-          description: Choose what to order by
-          name: order_by
-          in: query
-        - schema:
-            enum:
-              - ASC
-              - DESC
-            type: string
-          description: Choose direction of order
-          name: order_direction
-          in: query
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetGroupsResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/groups/createGroup:
-    post:
-      deprecated: true
-      tags:
-        - Groups
-      summary: Create a New Group
-      description: Create a new group with a given name. Returns the Id of the group.
-      operationId: createGroup
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateGroupRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GroupCreatedResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/groups/{id}/users/available:
-    get:
-      tags:
-        - Groups
-      summary: Get Available Users
-      description: >-
-        Retrieves a list of users who are in a state that allow for them to be
-        included in a group.
-      operationId: getGroupAvailableUsers
-      parameters:
-        - name: id
-          schema:
-            type: integer
-            format: int64
-          description: id of the group
-          in: path
-          required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetGroupAvailableUsers'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/groups/{id}:
-    get:
-      tags:
-        - Groups
-      summary: Get Group Details
-      description: Retrieves a single group by UUID in request URL.
-      operationId: getGroup
-      parameters:
-        - name: id
-          schema:
-            type: integer
-            format: int64
-          description: id of the group
-          in: path
-          required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetGroupResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/groups/{id}/addUsers:
-    post:
-      deprecated: true
-      tags:
-        - Groups
-      summary: Add Users to Group
-      description: Add user(s) to a specific group, to be used in policies.
-      operationId: addUser
-      parameters:
-        - schema:
-            type: integer
-            format: int64
-          description: id of the group
-          name: id
-          in: path
-          required: true
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AddUsersToGroupRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/AddUsersToGroupResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '409':
-          description: Conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/groups/{id}/removeUser:
-    post:
-      deprecated: true
-      tags:
-        - Groups
-      summary: Remove User from Group
-      description: Remove user from a specific group
-      operationId: removeUser
-      parameters:
-        - schema:
-            type: integer
-            format: int64
-          description: id of the group
-          name: id
-          in: path
-          required: true
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RemoveUserFromGroupRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RemoveUserFromGroupResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '409':
-          description: Conflict
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/hot-wallet/batch:
-    get:
-      tags:
-        - Cold Wallet
-      summary: Get the Current Batch
-      description: list transactions within current batch
-      operationId: getCurrentBatch
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DTOGetCurrentBatch'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-    post:
-      tags:
-        - Cold Wallet
-      summary: Create a Batch
-      description: create batch with transactions belongs to current batch
-      operationId: createBatch
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: integer
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/hot-wallet/batch/accept:
-    post:
-      tags:
-        - Cold Wallet
-      summary: Accept a Batch
-      description: accept batch with transactions belongs to current batch
-      operationId: acceptBatch
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                signed_transaction_batch:
-                  type: array
-                  format: json
-                  items:
-                    type: string
-                  description: A transaction batch signed by the cold wallet
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DTOAcceptBatch'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/hot-wallet/batch/reject:
-    post:
-      tags:
-        - Cold Wallet
-      summary: Reject a Batch
-      description: reject batch with transactions belongs to current batch
-      operationId: rejectBatch
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DTORejectBatch'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/hot-wallet/export-hot-pairing-message:
-    get:
-      tags:
-        - Cold Wallet
-      summary: Export the Hot Pairing Message
-      description: exports hot pairing message from hot wallet
-      operationId: exportHotPairingMessage
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PairMessagesFileResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/hot-wallet/import-cold-pairing-message:
-    post:
-      tags:
-        - Cold Wallet
-      summary: Import the Cold Pairing Message
-      description: Imports cold pairing message generated from cold wallet
-      operationId: importColdPairingMessage
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              properties:
-                cold_pairing_message:
-                  type: object
-                  format: json
-                  description: The cold pairing message generated by the cold wallet
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DTOImportColdMasterKey'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
           content:
             application/json:
               schema:
@@ -2301,186 +1531,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-  /api/systems/confirmers:
-    get:
-      tags:
-        - System User
-      summary: Get All Confirmers
-      description: >-
-        Retrieves all confirmers from the mpa. If the role parameter is also
-        set, only Confirmers with equal or greater privileges will be returned.
-      operationId: getAllConfirmers
-      parameters:
-        - schema:
-            $ref: '#/components/schemas/UserRole'
-          description: Choose role
-          name: role
-          in: query
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetUsersResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/systems/create:
-    post:
-      tags:
-        - System User
-      summary: Create System User Endpoint
-      description: >-
-        Creates a system user already registered in the mpa based on ID and
-        public wallet key. Returns the ApiKey of the user
-      operationId: createSystemUserEndpoint
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CreateSystemUserRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemUserCreatedResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/systems/{id}/delete:
-    post:
-      tags:
-        - System User
-      summary: Delete System User Endpoint
-      description: Deletes a system user from the wallet
-      operationId: deleteSystemUserEndpoint
-      parameters:
-        - schema:
-            type: integer
-            format: int64
-          description: id of the user
-          name: id
-          in: path
-          required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteSystemUserResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '404':
-          description: Not Found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
   /api/tenants:
     get:
       summary: List Tenants
@@ -2495,26 +1545,6 @@ paths:
                 type: array
                 items:
                   type: string
-      tags:
-        - Tenants
-  /api/tenants/default/setup:
-    post:
-      summary: Setup Default Tenant
-      description: >-
-        Populates the default tenant with initial state (master keys, policies,
-        blockchain networks). Can only be called once on an empty tenant.
-      operationId: setupDefaultTenant
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/CwpSetupStateParams'
-      responses:
-        '200':
-          description: Tenant setup completed successfully
-        '400':
-          description: Bad request (invalid params or tenant already populated)
       tags:
         - Tenants
   /api/transactions:
@@ -3307,55 +2337,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProblemDetails'
-  /api/users:
-    get:
-      tags:
-        - Users
-      summary: Get a List of Users
-      description: Retrieves all users.
-      operationId: getAllUsers
-      parameters:
-        - name: user_type
-          in: query
-          required: false
-          schema:
-            type: string
-            enum:
-              - approver
-              - system_user
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetUsersResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
   /api/users/info:
     get:
+      deprecated: true
       tags:
         - Users
       summary: Get a User Details
@@ -3400,246 +2384,6 @@ paths:
                 $ref: '#/components/schemas/ProblemDetails'
         '504':
           description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/users/register:
-    post:
-      deprecated: true
-      tags:
-        - Users
-      summary: Create a New User
-      description: >-
-        Create a new user from IDP User ID and a given name. Returns the UserId
-        of the user.
-      operationId: registerUserEndpoint
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/RegisterUserRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserRegisteredResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/users/pair:
-    post:
-      deprecated: true
-      tags:
-        - Users
-      summary: Pair Automated Approver
-      description: Pair a automated approver with a public key.
-      operationId: pairAutomatedApprover
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PairAutomatedApproverRequest'
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PairAutomatedApproverResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/users/{id}/delete:
-    post:
-      deprecated: true
-      tags:
-        - Users
-      summary: Delete a User
-      description: Delete a user. Only possible if you are admin.
-      operationId: deleteUserEndpoint
-      parameters:
-        - schema:
-            type: integer
-            format: int64
-          description: id of the user
-          name: id
-          in: path
-          required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/DeleteUserResponse'
-        '400':
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '502':
-          description: Bad Gateway
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '504':
-          description: Gateway Timeout
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-  /api/users/{id}/reset:
-    post:
-      deprecated: true
-      tags:
-        - Users
-      summary: Reset a User
-      description: Resets a user
-      operationId: resetUserEndpoint
-      parameters:
-        - schema:
-            type: integer
-            format: int64
-          description: id of the user
-          name: id
-          in: path
-          required: true
-      responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResetUserResponse'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ProblemDetails'
-        '500':
-          description: Internal Error
           content:
             application/json:
               schema:
@@ -4372,7 +3116,7 @@ paths:
           $ref: '#/components/responses/cwpBadRequest'
         '404':
           description: >-
-            Not found — the master key / account does not exist, or the CAIP-19
+            Not found â€” the master key / account does not exist, or the CAIP-19
             is not registered.
         '500':
           $ref: '#/components/responses/cwpInternalError'
@@ -4402,7 +3146,7 @@ paths:
           $ref: '#/components/responses/cwpBadRequest'
         '404':
           description: >-
-            Not found — the master key / account does not exist, or the CAIP-19
+            Not found â€” the master key / account does not exist, or the CAIP-19
             is not registered.
         '500':
           $ref: '#/components/responses/cwpInternalError'
@@ -4476,7 +3220,7 @@ paths:
         '400':
           $ref: '#/components/responses/cwpBadRequest'
         '404':
-          description: Not found — the master key or account does not exist.
+          description: Not found â€” the master key or account does not exist.
         '500':
           $ref: '#/components/responses/cwpInternalError'
   /api/cwp/balances/spendable/tokens/account:
@@ -4507,7 +3251,7 @@ paths:
         '400':
           $ref: '#/components/responses/cwpBadRequest'
         '404':
-          description: Not found — the master key or account does not exist.
+          description: Not found â€” the master key or account does not exist.
         '500':
           $ref: '#/components/responses/cwpInternalError'
   /api/cwp/prices/usd:
@@ -4535,7 +3279,7 @@ paths:
         '400':
           $ref: '#/components/responses/cwpBadRequest'
         '404':
-          description: Not found — one of the given CAIP-19s is not registered.
+          description: Not found â€” one of the given CAIP-19s is not registered.
         '500':
           $ref: '#/components/responses/cwpInternalError'
   /api/cwp/tokens/metadata:
@@ -4564,7 +3308,7 @@ paths:
         '400':
           $ref: '#/components/responses/cwpBadRequest'
         '404':
-          description: Not found — the CAIP-19's chain is not supported.
+          description: Not found â€” the CAIP-19's chain is not supported.
         '500':
           $ref: '#/components/responses/cwpInternalError'
   /api/cwp/solana/accountInfo:
@@ -4775,6 +3519,24 @@ paths:
                   $ref: '#/components/schemas/cwpToken'
         '500':
           $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/masterkeys/list:
+    get:
+      tags:
+        - Accounts
+      summary: List master keys
+      description: Returns all master keys registered for the tenant.
+      operationId: cwplistMasterKeys
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpMasterKey'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
   /api/cwp/accounts/list:
     get:
       tags:
@@ -4849,7 +3611,7 @@ paths:
         tiebreaker (also descending). If `Statuses` is omitted or empty, only
         operations that are not in a final state (`Succeeded` or `Failed`) are
         included. Use `Pagination.Size` to cap how many rows are returned per
-        call. When more rows remain, `PaginationToken` is non-empty — pass its
+        call. When more rows remain, `PaginationToken` is non-empty â€” pass its
         value as `Pagination.Token` on the next request. If `Pagination.Size` is
         zero or omitted, all matching rows are returned in one response and
         `PaginationToken` is empty.
@@ -4961,7 +3723,7 @@ paths:
         Start an async Make Transaction operation. With structured `Destination`
         (and optional `EVM` / chain-specific fields), creates, signs, and
         broadcasts the transaction when complete. With `RawTransaction` (and
-        optional `TxHash` for Canton prepared submission), MPC signing only—the
+        optional `TxHash` for Canton prepared submission), MPC signing onlyâ€”the
         operation does **not** broadcast; the response includes
         `SignedTransaction` and the integrator must submit the signed bytes to
         the network. Requires `Source` as `AddressSpec` and `CAIP19`. Status can
@@ -5009,7 +3771,7 @@ paths:
                   Omit `Destination`. Build the unsigned EIP-1559 transaction
                   locally (e.g. viem `serializeTransaction` with contract
                   `data`); pass the hex as `RawTransaction`. `RawTransaction`
-                  below is truncated for documentation—use the full serialized
+                  below is truncated for documentationâ€”use the full serialized
                   tx from your client.
                 value:
                   CAIP19: eip155:560048/slip44:60
@@ -5482,6 +4244,308 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/cwpUser'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/users/setuppublickey:
+    post:
+      tags:
+        - Approvals
+      summary: Set Up Public Key
+      description: >-
+        Registers the approver's ECDSA public key for the authenticated user,
+        enabling them to sign and verify operation approvals.
+      operationId: cwpsetupPublicKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - PublicKey
+                - JWTToken
+                - Signature
+              properties:
+                PublicKey:
+                  type: string
+                  description: Base64-encoded DER PKIX ECDSA public key.
+                JWTToken:
+                  type: string
+                  description: JWT token issued by the OIDC provider for this user.
+                Signature:
+                  type: string
+                  format: byte
+                  description: Signature of the JWT token made with the user's private key.
+      responses:
+        '200':
+          description: Public key registered successfully.
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/users/apikeys/list:
+    get:
+      tags:
+        - Users
+      summary: List API Keys
+      description: Returns all API keys (user ID and label only).
+      operationId: cwplistAPIKeys
+      responses:
+        '200':
+          description: List of API keys.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    UserID:
+                      type: string
+                    Label:
+                      type: string
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/users/apikeys/create:
+    post:
+      tags:
+        - Users
+      summary: Create API Key
+      description: >-
+        Creates a new API key for the given user. The key is returned only once
+        in this response â€” store it securely.
+      operationId: cwpcreateAPIKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - UserID
+                - Label
+              properties:
+                UserID:
+                  type: string
+                  description: ID of the user to create the key for.
+                Label:
+                  type: string
+                  description: Human-readable name for the key. Must be unique per user.
+      responses:
+        '200':
+          description: >-
+            API key created. Store the returned key securely â€” it cannot be
+            retrieved again.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  APIKey:
+                    type: string
+                    description: >-
+                      The API key. Shown only once â€” cannot be retrieved again
+                      after this response.
+                  Label:
+                    type: string
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/users/apikeys/delete:
+    post:
+      tags:
+        - Users
+      summary: Delete API Key
+      description: >-
+        Deletes the API key identified by the given user ID and label. Succeeds
+        without error if the key does not exist (idempotent).
+      operationId: cwpdeleteAPIKey
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - UserID
+                - Label
+              properties:
+                UserID:
+                  type: string
+                Label:
+                  type: string
+      responses:
+        '200':
+          description: Key deleted (or did not exist).
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/approvals/list:
+    get:
+      tags:
+        - Approvals
+      summary: List Pending Approvals
+      description: >-
+        Returns the operations currently pending approval or confirmation for
+        the given user.
+      operationId: cwplistApprovals
+      parameters:
+        - name: userID
+          in: query
+          required: true
+          description: ID of the user to list approvals for.
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of pending approvals.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/cwpApprovalListEntry'
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/approvals/approve:
+    post:
+      tags:
+        - Approvals
+      summary: Approve Operation
+      description: >-
+        Registers an approval of the specified operation by the given user.
+        `IntentSignature` must be a signature of the operation's intent made
+        with the user's private key.
+      operationId: cwpapproveOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - UserID
+                - OperationID
+                - IntentSignature
+              properties:
+                UserID:
+                  type: string
+                  description: ID of the approver.
+                OperationID:
+                  type: string
+                  description: ID of the operation to approve.
+                IntentSignature:
+                  type: string
+                  format: byte
+                  description: >-
+                    Signature of the operation's intent made with the user's
+                    private key.
+      responses:
+        '200':
+          description: Approval registered.
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/approvals/reject:
+    post:
+      tags:
+        - Approvals
+      summary: Reject Operation
+      description: Registers a rejection of the specified operation by the given user.
+      operationId: cwprejectOperation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - UserID
+                - OperationID
+              properties:
+                UserID:
+                  type: string
+                  description: ID of the approver.
+                OperationID:
+                  type: string
+                  description: ID of the operation to reject.
+      responses:
+        '200':
+          description: Rejection registered.
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/approvals/device/register:
+    post:
+      tags:
+        - Approvals
+      summary: Register Device
+      description: >-
+        Registers an Expo push notification device token for the user. Replaces
+        any previously registered token for the same user.
+      operationId: cwpregisterDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - UserID
+                - DeviceToken
+              properties:
+                UserID:
+                  type: string
+                  description: ID of the user registering the device.
+                DeviceToken:
+                  type: string
+                  description: Expo push notification device token.
+      responses:
+        '200':
+          description: Device token registered.
+        '400':
+          $ref: '#/components/responses/cwpBadRequest'
+        '500':
+          $ref: '#/components/responses/cwpInternalError'
+  /api/cwp/approvals/device/unregister:
+    post:
+      tags:
+        - Approvals
+      summary: Unregister Device
+      description: >-
+        Removes the registered Expo push notification device token for the user.
+        A no-op if no token is registered.
+      operationId: cwpunregisterDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - UserID
+              properties:
+                UserID:
+                  type: string
+                  description: ID of the user unregistering the device.
+      responses:
+        '200':
+          description: Device token removed.
         '400':
           $ref: '#/components/responses/cwpBadRequest'
         '500':
@@ -6181,7 +5245,7 @@ paths:
         Returns the tenant's transaction restrictions. These apply to
         transaction operations (e.g. transfers). Each restriction has a filter
         with criteria (amount, fee, symbol, source, destination, etc.). A
-        restriction applies when its filter matches — i.e. when all criteria are
+        restriction applies when its filter matches â€” i.e. when all criteria are
         satisfied. When a restriction applies, the specified approvers must
         approve before the operation can execute.
       operationId: cwpgetTransactionRestrictions
@@ -6315,10 +5379,10 @@ paths:
 
         Event types:
 
-        - `operation_status_update` — an operation changed status. Payload:
+        - `operation_status_update` â€” an operation changed status. Payload:
         `OperationStatusUpdatePayload`.
 
-        - `approver_onboarded` — an approver completed onboarding. Payload:
+        - `approver_onboarded` â€” an approver completed onboarding. Payload:
         `ApproverOnboardedPayload`.
 
 
@@ -6339,7 +5403,7 @@ paths:
             example: 30
       responses:
         '101':
-          description: Switching Protocols — WebSocket connection established.
+          description: Switching Protocols â€” WebSocket connection established.
         '400':
           $ref: '#/components/responses/cwpBadRequest'
   /api/cwp/walletconnect/pair:
@@ -6599,24 +5663,6 @@ components:
       properties:
         AsyncOperationID:
           $ref: '#/components/schemas/AsyncOperationID'
-    AddUsersToGroupRequest:
-      required:
-        - UserIds
-      properties:
-        UserIds:
-          description: The IDs of the users you wish to add.
-          type: array
-          items:
-            type: integer
-            format: int64
-          example:
-            - 74
-    AddUsersToGroupResponse:
-      required:
-        - AsyncOperationID
-      properties:
-        AsyncOperationID:
-          $ref: '#/components/schemas/AsyncOperationID'
     Address:
       required:
         - AddressAvailableBalance
@@ -6724,10 +5770,6 @@ components:
           type: string
         USDAmount:
           type: string
-    AuditFileResponse:
-      properties:
-        file:
-          type: string
     AsyncOperationID:
       description: asynchronous operation id for non-blocking operations
       type: string
@@ -6784,7 +5826,6 @@ components:
           type: string
           enum:
             - on-prem
-            - on-cloud
         HostURL:
           type: string
         OAuthAudience:
@@ -6796,6 +5837,9 @@ components:
         OAuthClientIdWebApp:
           type: string
         Version:
+          description: >-
+            Compile-time wallet git tag (or SHA if untagged) and linked CWP
+            library version, joined as wallet:cwp
           type: string
     TenantConfigResponse:
       required:
@@ -6859,27 +5903,6 @@ components:
       required:
         - OperationId
       type: object
-    CreateGroupRequest:
-      required:
-        - Name
-      properties:
-        Name:
-          description: The name of the group. Must be case-insensitively unique.
-          type: string
-          example: QATestGroup175707397541345632
-    CreateSystemUserRequest:
-      required:
-        - Name
-        - Role
-      properties:
-        Confirmer:
-          type: string
-          example: bootstrap@blockdaemon-wallet.com
-        Name:
-          type: string
-          example: e2e marketops 87dbd9c9
-        Role:
-          $ref: '#/components/schemas/SystemUserRole'
     CryptoSummary:
       required:
         - pendingRewardsBalance
@@ -6892,18 +5915,6 @@ components:
           type: string
         totalBalance:
           type: string
-    DTOAcceptBatch: {}
-    DTOGetCurrentBatch:
-      required:
-        - IsBatchInProcess
-        - Transactions
-      properties:
-        IsBatchInProcess:
-          type: boolean
-        Transactions:
-          type: array
-          items:
-            $ref: '#/components/schemas/DtoTransaction'
     DTOGetVaultOverview:
       required:
         - Addresses
@@ -6921,8 +5932,6 @@ components:
           type: string
         VaultName:
           type: string
-    DTOImportColdMasterKey: {}
-    DTORejectBatch: {}
     DatabaseHealth:
       required:
         - Healthy
@@ -6931,13 +5940,6 @@ components:
           type: string
         Healthy:
           type: boolean
-    DeleteSystemUserResponse: {}
-    DeleteUserResponse:
-      required:
-        - AsyncOperationID
-      properties:
-        AsyncOperationID:
-          $ref: '#/components/schemas/AsyncOperationID'
     DetailAssetSummary:
       required:
         - Amount
@@ -7228,57 +6230,6 @@ components:
           type: string
         VaultName:
           type: string
-    DtoGroup:
-      required:
-        - ApproverCount
-        - CreatedAt
-        - CreatedBy
-        - ID
-        - Name
-      properties:
-        ApproverCount:
-          type: integer
-          format: int32
-        CreatedAt:
-          type: string
-        CreatedBy:
-          type: string
-        ID:
-          type: integer
-          format: int64
-        Name:
-          type: string
-    DtoGroupFields:
-      required:
-        - GroupName
-      properties:
-        GroupName:
-          type: string
-    DtoGroupWithUsers:
-      required:
-        - ApproverCount
-        - CreatedAt
-        - CreatedBy
-        - ID
-        - Name
-        - Users
-      properties:
-        ApproverCount:
-          type: integer
-          format: int32
-        CreatedAt:
-          type: string
-        CreatedBy:
-          type: string
-        ID:
-          type: integer
-          format: int64
-        Name:
-          type: string
-        Users:
-          type: array
-          items:
-            $ref: '#/components/schemas/DtoPolicyUser'
     DtoNotification:
       description: Legacy. Try to remove it.
       required:
@@ -7691,6 +6642,8 @@ components:
           type: boolean
         Tokenization:
           type: boolean
+        GovernanceUI:
+          type: boolean
     FundSubAddressesRequest:
       properties:
         Asset:
@@ -7786,6 +6739,7 @@ components:
     GetDetailsValidatorDto:
       required:
         - Address
+        - CAIP19
         - Status
         - VaultId
         - VaultName
@@ -7794,6 +6748,8 @@ components:
           type: string
         Address:
           type: string
+        CAIP19:
+          $ref: '#/components/schemas/CAIP19'
         AnnualPercentageYield:
           type: string
         CurrentBalance:
@@ -7840,28 +6796,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/DtoFilterVault'
-    GetGroupResponse:
-      required:
-        - Group
-      properties:
-        Group:
-          $ref: '#/components/schemas/DtoGroupWithUsers'
-    GetGroupAvailableUsers:
-      required:
-        - Users
-      properties:
-        Users:
-          type: array
-          items:
-            $ref: '#/components/schemas/DtoUser'
-    GetGroupsResponse:
-      required:
-        - Groups
-      properties:
-        Groups:
-          type: array
-          items:
-            $ref: '#/components/schemas/DtoGroup'
     GetSummaryOfAllAssetsResponse:
       required:
         - Assets
@@ -7940,19 +6874,6 @@ components:
           $ref: '#/components/schemas/UserRole'
         Status:
           $ref: '#/components/schemas/UserState'
-    GetUsersResponse:
-      required:
-        - SystemUsers
-        - Users
-      properties:
-        SystemUsers:
-          type: array
-          items:
-            $ref: '#/components/schemas/SystemUser'
-        Users:
-          type: array
-          items:
-            $ref: '#/components/schemas/User'
     GetValidatorDetailsForAssetDto:
       required:
         - coinName
@@ -7993,6 +6914,7 @@ components:
     GetVaultStakingValidatorDto:
       required:
         - Address
+        - CAIP19
         - Status
         - VaultId
         - VaultName
@@ -8001,6 +6923,8 @@ components:
           type: string
         Address:
           type: string
+        CAIP19:
+          $ref: '#/components/schemas/CAIP19'
         AnnualPercentageYield:
           type: string
         CurrentBalance:
@@ -8062,13 +6986,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Vault'
-    GroupCreatedResponse:
-      required:
-        - ID
-      properties:
-        ID:
-          type: integer
-          format: int64
     HealthResponse:
       required:
         - DatabaseHealth
@@ -8241,10 +7158,6 @@ components:
           description: Total is the total number of results
           type: integer
           format: int64
-    PairMessagesFileResponse:
-      properties:
-        file:
-          type: string
     PendingExchangeRates:
       required:
         - CreatedAt
@@ -8390,50 +7303,6 @@ components:
         - base
         - canton
         - kaia
-    RegisterUserRequest:
-      required:
-        - Name
-        - Role
-      properties:
-        IdpUserId:
-          type: string
-          example: e2e.admin.b5c1f8f1@blockdaemon.com
-        Name:
-          type: string
-          example: e2e admin b5c1f8f1
-        Role:
-          $ref: '#/components/schemas/UserRole'
-    PairAutomatedApproverRequest:
-      required:
-        - UserID
-        - PublicKey
-      properties:
-        UserID:
-          type: integer
-          format: int64
-        PublicKey:
-          type: string
-    RemoveUserFromGroupRequest:
-      required:
-        - UserId
-      properties:
-        UserId:
-          description: The ID of the user you wish to remove.
-          type: integer
-          format: int64
-          example: 74
-    RemoveUserFromGroupResponse:
-      required:
-        - AsyncOperationID
-      properties:
-        AsyncOperationID:
-          $ref: '#/components/schemas/AsyncOperationID'
-    ResetUserResponse:
-      required:
-        - AsyncOperationID
-      properties:
-        AsyncOperationID:
-          $ref: '#/components/schemas/AsyncOperationID'
     ScreenTransferAttemptRequest:
       required:
         - amount
@@ -8676,46 +7545,6 @@ components:
         Network:
           type: string
           example: mainnet
-    SystemUser:
-      required:
-        - CreatedAt
-        - Id
-        - Name
-        - Role
-        - State
-        - WalletPublicKey
-      properties:
-        CreatedAt:
-          type: string
-        Id:
-          type: integer
-          format: int64
-        MpaId:
-          type: string
-        Name:
-          type: string
-        Role:
-          $ref: '#/components/schemas/SystemUserRole'
-        State:
-          $ref: '#/components/schemas/UserState'
-        WalletPublicKey:
-          type: string
-    SystemUserCreatedResponse:
-      required:
-        - ApiKey
-        - UserID
-      properties:
-        ApiKey:
-          type: string
-        UserID:
-          type: integer
-          format: int64
-    SystemUserRole:
-      type: string
-      enum:
-        - Admin
-        - MarketOps
-        - Viewer
     TransactionFee:
       required:
         - Asset
@@ -8975,30 +7804,6 @@ components:
       properties:
         AsyncOperationID:
           $ref: '#/components/schemas/AsyncOperationID'
-    User:
-      required:
-        - CreatedAt
-        - Id
-        - IdpUserId
-        - Name
-        - Role
-        - State
-      properties:
-        AsyncOperationID:
-          type: string
-        CreatedAt:
-          type: string
-        Id:
-          type: integer
-          format: int64
-        IdpUserId:
-          type: string
-        Name:
-          type: string
-        Role:
-          $ref: '#/components/schemas/UserRole'
-        State:
-          $ref: '#/components/schemas/UserState'
     UserState:
       type: string
       enum:
@@ -9014,26 +7819,17 @@ components:
         - PendingDeletionConfirmation
         - PendingDeletionApproval
         - Deleted
-    UserRegisteredResponse:
-      required:
-        - ID
-      properties:
-        ID:
-          $ref: '#/components/schemas/AsyncOperationID'
-    PairAutomatedApproverResponse:
-      required:
-        - ID
-      properties:
-        ID:
-          $ref: '#/components/schemas/AsyncOperationID'
     ValidatorsForAssetDto:
       required:
         - Asset
+        - CAIP19
         - NameOfCoin
         - Validators
       properties:
         Asset:
           type: string
+        CAIP19:
+          $ref: '#/components/schemas/CAIP19'
         NameOfCoin:
           type: string
         Validators:
@@ -9049,6 +7845,7 @@ components:
         - CreatedBy
         - Hidden
         - ID
+        - MasterKeyName
         - Name
         - State
       properties:
@@ -9069,6 +7866,8 @@ components:
         ID:
           type: integer
           format: int64
+        MasterKeyName:
+          type: string
         Name:
           type: string
         State:
@@ -9355,6 +8154,27 @@ components:
         Active:
           type: boolean
           description: True if the user can approve operations.
+    cwpApprovalListEntry:
+      type: object
+      description: An operation awaiting approval or confirmation from a user.
+      additionalProperties: false
+      required:
+        - OperationID
+        - OperationType
+        - Intent
+      properties:
+        OperationID:
+          type: string
+          description: ID of the operation.
+        OperationType:
+          type: string
+          description: >-
+            Type of operation (e.g. `makeTransaction`,
+            `updatePolicyRestriction`).
+        Intent:
+          description: >-
+            Raw JSON of the operation's intent, suitable for display to the
+            approver.
     cwpGetAddressRequest:
       type: object
       description: Request to get an address for the native asset.
@@ -9677,6 +8497,22 @@ components:
         CAIP2:
           type: string
           description: CAIP-2 chain identifier (e.g. "eip155:1" for Ethereum mainnet).
+    cwpMasterKey:
+      type: object
+      additionalProperties: false
+      description: A master key row returned by `GET /masterkeys/list`.
+      required:
+        - Name
+        - IsExternal
+      properties:
+        Name:
+          type: string
+          description: Master key name.
+        IsExternal:
+          type: boolean
+          description: >-
+            Whether the master key was generated externally rather than by this
+            system.
     cwpAccount:
       type: object
       additionalProperties: false
@@ -10007,7 +8843,7 @@ components:
           type: number
           format: double
           description: >-
-            Maximum allowed USD rate; must be ≥ `USDMin` when used; cannot be
+            Maximum allowed USD rate; must be â‰¥ `USDMin` when used; cannot be
             combined with `USDRate`.
       required:
         - Asset
@@ -10537,6 +9373,22 @@ components:
               description: >-
                 Hex-encoded raw Ed25519 public key bytes for topology
                 transactions.
+            ConfirmingParticipantIDs:
+              type: array
+              items:
+                type: string
+              description: >-
+                Complete set of participant UIDs that must confirm for the
+                enrolled party. If omitted entirely, CWP uses the connected
+                participant node. If set, the list is used as-is.
+            ConfirmingThreshold:
+              type: integer
+              format: int32
+              minimum: 0
+              description: >-
+                Confirmation threshold for the enrolled party. If omitted, the
+                CWP chooses the threshold. If set, the threshold value is used
+                as-is.
         Preapproval:
           type: object
           properties:
@@ -10970,6 +9822,8 @@ components:
           description: Approvers required when the restriction applies.
           items:
             $ref: '#/components/schemas/cwpApproversByGroups'
+        Initiator:
+          $ref: '#/components/schemas/cwpExceptCriterionString'
     cwpPolicyRestriction:
       type: object
       additionalProperties: false
@@ -11030,6 +9884,21 @@ components:
           $ref: '#/components/schemas/cwpValueCriterionTransactionFunction'
         TestNetwork:
           type: boolean
+        Initiator:
+          $ref: '#/components/schemas/cwpExceptCriterionString'
+    cwpExceptCriterionString:
+      type: object
+      additionalProperties: false
+      description: >-
+        Satisfied if the initiator is not a member of any group in the Except
+        list. If the list is empty, the criterion is satisfied for any
+        initiator.
+      properties:
+        Except:
+          type: array
+          description: Groups whose members the restriction does not apply to.
+          items:
+            type: string
     cwpValueCriterionString:
       type: object
       additionalProperties: false
@@ -11425,7 +10294,7 @@ components:
       description: >-
         Payload for `makeTransaction`. Structured path (`Destination`, optional
         chain specs): build, sign, and broadcast. Raw path (`RawTransaction`,
-        optional `TxHash`): MPC sign only—no broadcast; integrator submits
+        optional `TxHash`): MPC sign onlyâ€”no broadcast; integrator submits
         `SignedTransaction` from the completed operation.
       additionalProperties: false
       properties:
@@ -12652,6 +11521,21 @@ components:
           type: boolean
         Source:
           $ref: '#/components/schemas/cwpAddressSpec'
+          ConfirmingParticipantIDs:
+            type: array
+            items:
+              type: string
+            description: >-
+              Complete set of participant UIDs that must confirm for the
+              enrolled party. If omitted entirely, CWP uses the connected
+              participant node. If set, the list is used as-is.
+          ConfirmingThreshold:
+            type: integer
+            format: int32
+            minimum: 0
+            description: >-
+              Confirmation threshold for the enrolled party. If omitted, the CWP
+              chooses the threshold. If set, the threshold value is used as-is.
       required:
         - Asset
         - Source
