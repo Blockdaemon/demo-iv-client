@@ -13,12 +13,15 @@
     "evm:transfer": "tsx --env-file=.env makeTransaction-evm-data-transfer.ts",
     "evm:mint": "tsx --env-file=.env makeTransaction-evm-data-mint.ts",
     "evm:deploy": "tsx --env-file=.env makeTransaction-raw-deploycontract.ts",
+    "evm:deposit-token": "tsx --env-file=.env makeTransaction-evm-deposit-token.ts",
     "canton:transfer": "tsx --env-file=.env makeTransaction-raw-canton-transfer.ts",
     "canton:create-externalparty": "tsx --env-file=.env canton-create-externalparty.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@canton-network/wallet-sdk": "^1.4.0",
+    "@openzeppelin/community-contracts": "github:OpenZeppelin/openzeppelin-community-contracts#0b4b9817901367b41bf0734bb17dc6998f07259c",
+    "@openzeppelin/contracts": "5.7.0",
     "viem": "^2.37.4",
     "ws": "^8.18.0"
   },
@@ -26,6 +29,7 @@
     "@types/node": "^20.0.0",
     "@types/ws": "^8.5.0",
     "openapi-typescript-codegen": "^0.29.0",
+    "solc": "0.8.27",
     "tsx": "^4.0.0",
     "typescript": "^5.0.0"
   },
