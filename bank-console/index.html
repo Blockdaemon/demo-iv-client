@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bank payments console (concept)</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f4f1ea;
+      --ink: #1c1915;
+      --muted: #5c564c;
+      --line: #d9d2c5;
+      --panel: #fffcf7;
+      --accent: #1f4d3a;
+      --accent-ink: #f7f3ea;
+      --warn: #8a4b12;
+      --bad: #7a2430;
+      --ok: #1f4d3a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 "Iowan Old Style", Palatino, Georgia, serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      align-items: baseline;
+      padding: 20px 28px 12px;
+      border-bottom: 1px solid var(--line);
+    }
+    h1 { font-size: 22px; font-weight: 600; margin: 0; }
+    h2 { font-size: 16px; margin: 0 0 8px; }
+    p { margin: 0; }
+    .sub { color: var(--muted); font-size: 13px; }
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(280px, 0.8fr);
+      gap: 20px;
+      padding: 20px 28px 40px;
+    }
+    button, .chip {
+      font: inherit;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 999px;
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    button.active, button.primary {
+      background: var(--accent);
+      color: var(--accent-ink);
+      border-color: var(--accent);
+    }
+    .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .step {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 14px 16px;
+      margin-top: 10px;
+    }
+    .step.current { border-color: var(--accent); }
+    .kicker {
+      font-family: ui-sans-serif, system-ui, sans-serif;
+      font-size: 11px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .look {
+      margin-top: 8px;
+      padding: 8px 10px;
+      background: #efe8da;
+      font-size: 14px;
+    }
+    pre {
+      margin: 8px 0 0;
+      padding: 10px;
+      background: #221f1b;
+      color: #f4efe6;
+      font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+      overflow: auto;
+      white-space: pre-wrap;
+    }
+    #log { display: flex; flex-direction: column; gap: 10px; }
+    .event { border-top: 1px solid var(--line); padding-top: 8px; }
+    .tag { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 11px; }
+    .tag.ok { color: var(--ok); }
+    .tag.bad { color: var(--bad); }
+    .tag.warn { color: var(--warn); }
+    aside h2 { font-size: 15px; }
+    .note { color: var(--muted); font-size: 13px; margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Bank payments console</h1>
+      <p class="sub">Concept walkthrough. This page is the bank. Vault, the automated approver, policies, and transaction history stay in their own windows.</p>
+    </div>
+    <div class="row">
+      <button id="payin" class="active" type="button">Pay-in</button>
+      <button id="payout" type="button">Pay-out</button>
+      <button id="reset" type="button">Reset</button>
+    </div>
+  </header>
+  <main>
+    <section>
+      <p class="sub" id="blurb"></p>
+      <div id="steps"></div>
+    </section>
+    <aside>
+      <h2>Signals the bank acts on</h2>
+      <p class="note">Click a step to append the signal. The CWP events socket only hints that an operation changed. The bank then reads status. A deposit is not on that socket.</p>
+      <div id="log"></div>
+    </aside>
+  </main>
+  <script>
+    const flows = {
+      payin: {
+        blurb: "MetaMask A pays Circle Amoy USDC to Corporate A's deposit address. The bank screens the sender, then a gas sponsor sweeps the token to the central address. Corporate A is paid in fiat after this page.",
+        steps: [
+          {
+            kicker: "1. Channel",
+            title: "Corporate A deposit address is collections index 1",
+            body: "Corporate B is index 2 on the same omnibus account. Index 0 is the central wallet and is not given to payers.",
+            look: "Stay on this page. Vault accounts already exist: collections, gas-sponsor, payout-hot.",
+          },
+          {
+            kicker: "2. Customer pays",
+            title: "MetaMask A sends Amoy USDC",
+            body: "Contract 0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582. MetaMask pays its own POL. The deposit address holds no gas.",
+            look: "Switch to MetaMask. Send a small USDC amount to the Corporate A address only.",
+            event: {
+              tag: "Vault history",
+              tone: "ok",
+              title: "Deposit observed on index 1",
+              body: "Not a CWP /events message. The EVM tracker or webhook writes transaction history. The bank matches the address to Corporate A.",
+              json: {
+                to: "0x<collections index 1>",
+                from: "0x<MetaMask A>",
+                asset: "eip155:80002/erc20:0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582",
+                amount: "10.00",
+              },
+            },
+          },
+          {
+            kicker: "3. Screen, then sweep",
+            title: "Screen the sender before any sweep",
+            body: "POST /api/compliance/screen. The field is named destination. Put MetaMask A's address in it. isInternal must be false. Do not start generateConsolidationData while alerts is non-empty.",
+            look: "Stay here until the response is back. Chainalysis is called as a Polygon withdrawal attempt, so an Amoy address may return an unsupported-network error. Show that body if it does.",
+            event: {
+              tag: "Screen",
+              tone: "warn",
+              title: "POST /api/compliance/screen",
+              body: "Synchronous. This is not an events-socket message.",
+              json: {
+                amount: "10.00",
+                asset: "USDC",
+                blockchain: "polygon",
+                destination: "0x<MetaMask A sender>",
+                isInternal: false,
+              },
+            },
+          },
+          {
+            kicker: "4. Sponsored sweep",
+            title: "No gas on the deposit address",
+            body: "generateConsolidationData for collections index 1, then sponsor from gas-sponsor. Gateway 0x918C691F014B621721c6E3D24d160BBe02808b05. The token lands on collections index 0.",
+            look: "Vault Operations for the two operation ids. Automated approver should not be required: it does not sign these two operation types. Transaction History, then the block explorer, for the sponsor transaction.",
+            event: {
+              tag: "CWP events",
+              tone: "ok",
+              title: "operation_status_update",
+              body: "Hint only. Bank GETs /api/cwp/operations/id/{id}/status. Same hint fires again when sponsor settles.",
+              json: {
+                type: "operation_status_update",
+                operationId: "sweep-corp-a-001",
+              },
+            },
+          },
+          {
+            kicker: "5. Fiat",
+            title: "Spoken credit to the corporate",
+            body: "Index 0 now holds the USDC. The corporate demand account is credited on the bank core. No issuer API is called.",
+            look: "Stay on this page. Do not open Circle.",
+          },
+        ],
+      },
+      payout: {
+        blurb: "payout-hot already holds faucet USDC. MetaMask B is the only allow-listed worker. Any other address is blocked. The automated approver confirms the allowed payout.",
+        steps: [
+          {
+            kicker: "1. Float",
+            title: "Inventory is already on payout-hot",
+            body: "MetaMask A funded this account before the meeting. The corporate never holds USDC.",
+            look: "Vault account payout-hot, USDC balance.",
+          },
+          {
+            kicker: "2. Allow-listed worker",
+            title: "Pay MetaMask B",
+            body: "makeTransaction from payout-hot. CAIP-19 is the Amoy USDC id. OperationID is the bank remit id. The Block skips because ExternalDestination Except contains B. The approver confirms.",
+            look: "Automated approver window: one confirmation, no phone. Then Vault Operations, Transaction History, and the block explorer. MetaMask B shows the USDC.",
+            event: {
+              tag: "CWP events",
+              tone: "ok",
+              title: "operation_status_update",
+              body: "Bank wakes, then GETs status until the payout is settled.",
+              json: {
+                type: "operation_status_update",
+                operationId: "payout-worker-b-001",
+              },
+            },
+          },
+          {
+            kicker: "3. Anyone else",
+            title: "Pay MetaMask A, or any address not on the list",
+            body: "Same route. The Block matches. The operation fails with M0025. The approver never signs.",
+            look: "Vault Operations shows the blocked payout. Policies shows the Block on payout-hot and the one-approver rule beside it.",
+            event: {
+              tag: "CWP status",
+              tone: "bad",
+              title: "M0025 blocked by policy",
+              body: "The events hint may still arrive. Status is the authority.",
+              json: {
+                operationId: "payout-worker-a-002",
+                errorCode: "M0025",
+              },
+            },
+          },
+        ],
+      },
+    };
+
+    const stepsEl = document.getElementById("steps");
+    const logEl = document.getElementById("log");
+    const blurbEl = document.getElementById("blurb");
+    let current = "payin";
+
+    function render() {
+      document.getElementById("payin").classList.toggle("active", current === "payin");
+      document.getElementById("payout").classList.toggle("active", current === "payout");
+      const flow = flows[current];
+      blurbEl.textContent = flow.blurb;
+      stepsEl.innerHTML = "";
+      flow.steps.forEach((step, index) => {
+        const el = document.createElement("article");
+        el.className = "step";
+        el.innerHTML =
+          '<div class="kicker"></div><h2></h2><p></p><div class="look"></div>';
+        el.querySelector(".kicker").textContent = step.kicker;
+        el.querySelector("h2").textContent = step.title;
+        el.querySelector("p").textContent = step.body;
+        el.querySelector(".look").textContent = "Show: " + step.look;
+        el.addEventListener("click", () => {
+          document.querySelectorAll(".step").forEach((n) => n.classList.remove("current"));
+          el.classList.add("current");
+          if (step.event) pushEvent(step.event);
+        });
+        stepsEl.appendChild(el);
+        if (index === 0) el.classList.add("current");
+      });
+    }
+
+    function pushEvent(event) {
+      const el = document.createElement("article");
+      el.className = "event";
+      const tag = document.createElement("div");
+      tag.className = "tag " + event.tone;
+      tag.textContent = event.tag;
+      const title = document.createElement("strong");
+      title.textContent = " " + event.title;
+      const body = document.createElement("p");
+      body.className = "note";
+      body.textContent = event.body;
+      const pre = document.createElement("pre");
+      pre.textContent = JSON.stringify(event.json, null, 2);
+      el.append(tag, title, body, pre);
+      logEl.prepend(el);
+    }
+
+    document.getElementById("payin").onclick = () => { current = "payin"; render(); };
+    document.getElementById("payout").onclick = () => { current = "payout"; render(); };
+    document.getElementById("reset").onclick = () => { logEl.innerHTML = ""; render(); };
+    render();
+  </script>
+</body>
+</html>
