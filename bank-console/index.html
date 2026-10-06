@@ -58,6 +58,16 @@
       border-color: var(--accent);
     }
     button:disabled { opacity: 0.45; cursor: not-allowed; }
+    input.field {
+      display: block;
+      width: min(100%, 440px);
+      margin-top: 10px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+    }
     .addr {
       font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
       word-break: break-all;
@@ -174,7 +184,7 @@
       <div id="steps"></div>
     </section>
     <section id="map">
-      <p class="sub">One master key. Polygon Amoy USDC. Addresses in green are Vault. Brown cards are wallets the bank does not hold. The blue card is the bank's own ledger.</p>
+      <p class="sub">Ethereum Sepolia USDC. Addresses in green are Vault. Brown cards are wallets the bank does not hold. The blue card is the bank's own ledger.</p>
       <div class="legend">
         <span><i class="swatch" style="background:#8a4b12"></i>Outside Vault</span>
         <span><i class="swatch" style="background:#1f4d3a"></i>Vault account</span>
@@ -188,12 +198,8 @@
         <div class="flow" style="margin-top:12px">
           <article class="card outside">
             <div class="kicker">Customer wallet</div>
-            <h3>MetaMask A</h3>
-            <p>Not a Vault account. Holds Amoy USDC and POL.</p>
-            <ul>
-              <li>Sends USDC to Corporate A</li>
-              <li>Pays its own POL for that send</li>
-            </ul>
+            <h3>Ecommerce customer</h3>
+            <p>Pays for goods from a stablecoin balance into Corporate Client A's collection address.</p>
           </article>
           <div class="edge">USDC deposit<br>customer pays gas</div>
           <div class="vault-box">
@@ -201,12 +207,12 @@
             <div class="stack">
               <article class="card vault">
                 <div class="kicker">Index 1, given to the customer</div>
-                <h3>Corporate A deposit</h3>
-                <p>Receives the USDC. Holds no POL. This is the no-gas address.</p>
+                <h3>Corporate Client A deposit</h3>
+                <p>Receives the USDC. Holds no ETH. This is the no-gas address.</p>
               </article>
               <article class="card vault">
                 <div class="kicker">Index 2, not this payment</div>
-                <h3>Corporate B deposit</h3>
+                <h3>Corporate Client B deposit</h3>
                 <p>Same omnibus account. A second customer would pay here.</p>
               </article>
             </div>
@@ -221,13 +227,13 @@
             <article class="card vault">
               <div class="kicker">gas-sponsor index 0</div>
               <h3>Gas sponsor</h3>
-              <p>Holds POL only. Pays gas for the sweep. Does not hold the USDC.</p>
+              <p>Holds ETH only. Pays gas for the sweep. Does not hold the USDC.</p>
             </article>
           </div>
-          <div class="edge">Spoken credit<br>no chain transaction</div>
+          <div class="edge">Account credit<br>no chain transaction</div>
           <article class="card books">
             <div class="kicker">Bank core</div>
-            <h3>Corporate A demand account</h3>
+            <h3>Corporate Client A demand account</h3>
             <p>Fiat credit after the central wallet shows the USDC. Not a Vault account.</p>
           </article>
         </div>
@@ -235,7 +241,7 @@
 
       <div class="diagram">
         <h2>Pay-out</h2>
-        <p class="sub">The float is already on payout-hot. MetaMask B is the only allow-listed worker. Any other address is blocked before the approver signs.</p>
+        <p class="sub">The float sits on payout-hot. The Corporate Client Worker A address is the allow-list. A random unapproved address is blocked before the approver signs.</p>
         <div class="payout-flow" style="margin-top:12px">
           <article class="card vault">
             <div class="kicker">Vault account payout-hot, index 0</div>
@@ -249,13 +255,13 @@
           <div class="split">
             <article class="card outside">
               <div class="kicker">Worker wallet</div>
-              <h3>MetaMask B</h3>
-              <p>Only address on the allow-list. Receives USDC. The automated approver confirms this payout.</p>
+              <h3>Corporate Client Worker A</h3>
+              <p>Address on the allow-list. Receives USDC. The automated approver confirms this payout.</p>
             </article>
             <article class="card blocked">
               <div class="kicker">Not on the list</div>
-              <h3>MetaMask A, or anyone else</h3>
-              <p>Same payout route. Policy blocks it. The approver never signs.</p>
+              <h3>Random unapproved address</h3>
+              <p>Fictitious address 0x00000000000000000000000000000000deadbeef. Same payout route. Policy blocks it. The approver never signs.</p>
             </article>
           </div>
         </div>
@@ -265,33 +271,34 @@
       <p class="note" id="listen"></p>
       <div id="address-cards"></div>
       <h2 style="margin-top:18px">Signals the bank acts on</h2>
+      <p class="note" id="signal-flow"></p>
       <div id="log"></div>
     </aside>
   </main>
   <script>
     const flows = {
       payin: {
-        blurb: "MetaMask A pays Circle Amoy USDC to Corporate A's deposit address. The bank screens the sender, then a gas sponsor sweeps the token to the central address. Corporate A is paid in fiat after this page.",
+        blurb: "The ecommerce customer sends Sepolia USDC to Corporate Client A's deposit address. The bank screens the sender, then a gas sponsor sweeps the token to the central address. Corporate Client A is paid in fiat after this page.",
         steps: [
           {
             kicker: "1. Channel",
-            title: "Corporate A deposit address is collections index 1",
-            body: "Corporate B is index 2 on the same omnibus account. Index 0 is the central wallet and is not given to payers.",
+            title: "Corporate Client A deposit address is collections index 1",
+            body: "Corporate Client B is index 2 on the same omnibus account. Index 0 is the central wallet and is not given to payers.",
             action: "addresses",
           },
           {
             kicker: "2. Customer pays",
-            title: "MetaMask A sends Amoy USDC",
+            title: "The ecommerce customer sends Sepolia USDC to the Corporate Client A deposit address",
             body: "The deposit address holds no gas.",
             event: {
               tag: "Vault history",
               tone: "ok",
               title: "Deposit observed on index 1",
-              body: "Not a CWP /events message. The EVM tracker or webhook writes transaction history. The bank matches the address to Corporate A.",
+              body: "Not a CWP /events message. The EVM tracker or webhook writes transaction history. The bank matches the address to Corporate Client A.",
               json: {
                 to: "0x<collections index 1>",
-                from: "0x<MetaMask A>",
-                asset: "eip155:80002/erc20:0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582",
+                from: "0x<Ecommerce customer>",
+                asset: "eip155:11155111/erc20:0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238",
                 amount: "10.00",
               },
             },
@@ -299,7 +306,7 @@
           {
             kicker: "3. Screen, then sweep",
             title: "Screen the received deposit before any sweep",
-            body: "POST /api/compliance/screen/deposit with the Amoy tx hash. Chainalysis does not index Amoy or Sepolia, so the live call returns 500 and Sweep stays locked. The log then shows an example mainnet 200. That example is not this deposit.",
+            body: "After the deposit is observed, the log shows an example mainnet screen response, then POST /api/compliance/screen/deposit for this transfer. The page does not call that route on Sepolia. Sweep runs from the observed deposit.",
             event: {
               tag: "Screen",
               tone: "warn",
@@ -307,7 +314,7 @@
               body: "One HTTP call. Vault polls Chainalysis, then returns alerts. This is not an events-socket message.",
               json: {
                 asset: "USDC",
-                blockchain: "polygon",
+                blockchain: "ethereum",
                 txHash: "0x<deposit transaction hash>",
                 address: "0x<collections index 1>",
                 amount: "10.00",
@@ -318,7 +325,7 @@
           {
             kicker: "4. Sponsored sweep",
             title: "No gas on the deposit address",
-            body: "generateConsolidationData for collections index 1, then sponsor from gas-sponsor. Gateway 0x918C691F014B621721c6E3D24d160BBe02808b05. The token lands on collections index 0.",
+            body: "generateConsolidationData for collections index 1, then sponsor from gas-sponsor. Gateway 0x725DCbD76c4478618E1f57322bcE6dEdf8cE2bf9. The token lands on collections index 0.",
             action: "sweep",
             event: {
               tag: "CWP events",
@@ -333,59 +340,50 @@
           },
           {
             kicker: "5. Fiat",
-            title: "Spoken credit to the corporate",
-            body: "Index 0 now holds the USDC. The corporate demand account is credited on the bank core. No issuer API is called.",
+            title: "Credit to corporate client account",
+            body: "Index 0 now holds the USDC. The corporate client demand account is credited on the bank core. No issuer API is called.",
           },
         ],
       },
       payout: {
-        blurb: "payout-hot already holds faucet USDC. MetaMask B is the only allow-listed worker. Any other address is blocked. The automated approver confirms the allowed payout.",
+        blurb: "payout-hot holds the USDC float. The Corporate Client Worker A address is the allow-list. A random unapproved address is blocked. The automated approver confirms the allowed payout.",
         steps: [
           {
             kicker: "1. Float",
             title: "Inventory is already on payout-hot",
-            body: "MetaMask A funded this account before the meeting. The corporate never holds USDC.",
+            body: "The corporate client never holds USDC. In production, treasury and liquidity management keeps this hot float inside an operating band: a balance below the band is topped up from reserve, and a balance above the band is returned to reserve.",
+            action: "balance",
           },
           {
-            kicker: "2. Allow-listed worker",
-            title: "Pay MetaMask B",
-            body: "makeTransaction from payout-hot. CAIP-19 is the Amoy USDC id. OperationID is the bank remit id. The Block skips because ExternalDestination Except contains B. The approver confirms.",
-            event: {
-              tag: "CWP events",
-              tone: "ok",
-              title: "operation_status_update",
-              body: "Bank wakes, then GETs status until the payout is settled.",
-              json: {
-                type: "operation_status_update",
-                operationId: "payout-worker-b-001",
-              },
-            },
+            kicker: "2. Worker allow-list",
+            title: "Set the Corporate Client Worker A wallet",
+            body: "Enter the Corporate Client Worker A address. The button adds that address to the payout-hot Block ExternalDestination Except list, and creates that Block when none exists. Other external destinations stay blocked. This is an Update Policy operation, so an approver confirms it.",
+            action: "allowlist",
           },
           {
-            kicker: "3. Anyone else",
-            title: "Pay MetaMask A, or any address not on the list",
-            body: "Same route. The Block matches. The operation fails with M0025. The approver never signs.",
-            event: {
-              tag: "CWP status",
-              tone: "bad",
-              title: "M0025 blocked by policy",
-              body: "The events hint may still arrive. Status is the authority.",
-              json: {
-                operationId: "payout-worker-a-002",
-                errorCode: "M0025",
-              },
-            },
+            kicker: "3. Allow-listed worker",
+            title: "Pay Corporate Client Worker A",
+            body: "makeTransaction of 1 USDC from payout-hot to the address above. CAIP-19 is the Sepolia USDC id. The Block skips because ExternalDestination Except contains that address. The approver confirms.",
+            action: "pay-worker",
+          },
+          {
+            kicker: "4. Anyone else",
+            title: "Pay random unapproved address",
+            body: "Same route to the fictitious address 0x00000000000000000000000000000000deadbeef. The Block matches. The operation fails with M0025. The approver never signs.",
+            action: "pay-worker-a",
           },
         ],
       },
     };
 
     const HOST = "https://payments-demo.api.dev.blockdaemon-wallet.com";
-    const NATIVE = "eip155:80002/slip44:966";
-    const USDC = "eip155:80002/erc20:0x41E94Eb019C0762f9Bfcf9Fb1E58725BfB0e7582";
+    const NATIVE = "eip155:11155111/slip44:60";
+    const USDC = "eip155:11155111/erc20:0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238";
     const USDC_DECIMALS = 6;
-    const GATEWAY = "0x918C691F014B621721c6E3D24d160BBe02808b05";
-    // Shape of a mainnet 200. Not a Chainalysis result for an Amoy or Sepolia hash.
+    const GATEWAY = "0x725DCbD76c4478618E1f57322bcE6dEdf8cE2bf9";
+    const WORKER_A = "0x00000000000000000000000000000000deadbeef";
+    const PAYOUT_AMOUNT = "1";
+    // Shape of a mainnet 200. Not a Chainalysis result for a Sepolia hash.
     const MAINNET_SCREEN_EXAMPLE = {
       provider: "chainalysis",
       network: "Ethereum",
@@ -400,6 +398,9 @@
     let current = "map";
     let addresses = null;
     let screened = null;
+    let workerAddress = "";
+    let initiatorId = "";
+    const lastHints = new Map();
     let sweeping = false;
     let creditShown = false;
     const seenHashes = new Set();
@@ -414,6 +415,17 @@
 
     function sleep(ms) {
       return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    function withInitiator(body) {
+      if (!initiatorId) return body;
+      return Object.assign({}, body, { InitiatorID: initiatorId });
+    }
+
+    async function loadConsoleConfig() {
+      const res = await fetch("/console-config");
+      const json = await res.json();
+      initiatorId = String((json && json.initiatorId) || "").trim();
     }
 
     async function vault(path, body) {
@@ -459,7 +471,7 @@
       if (!destinationHit(tx, addresses.corpA.Address)) return false;
       if (tx.InternalSource) return false;
       const caip = String(tx.CAIP19 || "").toLowerCase();
-      if (tx.Asset === "USDC" || caip.includes("0x41e94eb019c0762f9bfcf9fb1e58725bfb0e7582")) return true;
+      if (tx.Asset === "USDC" || caip.includes("0x1c7d4b196cb0c7b01d743fbc6116a902379c7238")) return true;
       return false;
     }
 
@@ -479,8 +491,8 @@
       cardsEl.innerHTML = "";
       if (!addresses) return;
       for (const row of [
-        { name: "Corporate A", index: 1, info: addresses.corpA },
-        { name: "Corporate B", index: 2, info: addresses.corpB },
+        { name: "Corporate Client A", index: 1, info: addresses.corpA },
+        { name: "Corporate Client B", index: 2, info: addresses.corpB },
       ]) {
         const card = document.createElement("article");
         card.className = "card vault";
@@ -500,8 +512,27 @@
       }
     }
 
+    let writingFlow = "";
+    const listenByFlow = { payin: "", payout: "" };
+
+    function activeSignalFlow() {
+      if (writingFlow === "payin" || writingFlow === "payout") return writingFlow;
+      return current === "payout" ? "payout" : "payin";
+    }
+
+    function showSignals() {
+      const which = current === "payout" ? "payout" : "payin";
+      listenEl.textContent = listenByFlow[which] || "";
+      cardsEl.hidden = which !== "payin";
+      const label = document.getElementById("signal-flow");
+      if (label) label.textContent = which === "payout" ? "Pay-out" : "Pay-in";
+      for (const el of logEl.children) el.hidden = el.dataset.flow !== which;
+    }
+
     function setListen(text) {
-      listenEl.textContent = text;
+      const which = activeSignalFlow();
+      listenByFlow[which] = text;
+      if (current === which) listenEl.textContent = text;
     }
 
     function syncSweepButton() {
@@ -541,6 +572,8 @@
     }
 
     async function createAddresses() {
+      const previousFlow = writingFlow;
+      writingFlow = "payin";
       try {
         setListen("Creating collections sub-addresses.");
         const listed = await vault("/api/cwp/addresses/list", {
@@ -550,17 +583,17 @@
         });
         const rows = Array.isArray(listed) ? listed.slice() : [];
         const central = await ensureIndex(rows, 0, "Central wallet");
-        const corpA = await ensureIndex(rows, 1, "Corporate A deposit");
-        const corpB = await ensureIndex(rows, 2, "Corporate B deposit");
+        const corpA = await ensureIndex(rows, 1, "Corporate Client A deposit");
+        const corpB = await ensureIndex(rows, 2, "Corporate Client B deposit");
         addresses = { central, corpA, corpB };
-        sessionStorage.setItem("paymentsDemoAddresses", JSON.stringify(addresses));
+        sessionStorage.setItem("paymentsDemoAddressesSepolia", JSON.stringify(addresses));
         paintAddresses();
-        setListen("Watching Corporate A for an Amoy USDC deposit.");
+        setListen("Watching Corporate Client A for a Sepolia USDC deposit.");
         pushEvent({
           tag: "CWP addresses",
           tone: "ok",
           title: "collections index 1 and index 2",
-          body: "Index 1 is the address given to Corporate A. Index 2 is Corporate B. Both sit on the collections account.",
+          body: "Index 1 is the address given to Corporate Client A. Index 2 is Corporate Client B. Both sit on the collections account.",
           json: {
             corporateA: { index: corpA.Index, label: corpA.Label, address: corpA.Address },
             corporateB: { index: corpB.Index, label: corpB.Label, address: corpB.Address },
@@ -577,6 +610,8 @@
           body: "Vault did not return the two deposit addresses.",
           json: err.detail || { message: err.message },
         });
+      } finally {
+        writingFlow = previousFlow;
       }
     }
 
@@ -587,6 +622,8 @@
         pollDeposits().catch((err) => {
           if (watchErrorShown) return;
           watchErrorShown = true;
+          const previousFlow = writingFlow;
+          writingFlow = "payin";
           pushEvent({
             tag: "Vault history",
             tone: "bad",
@@ -594,6 +631,7 @@
             body: "The deposit watch could not read transaction history.",
             json: err.detail || { message: err.message },
           });
+          writingFlow = previousFlow;
         });
       }, 8000);
       pollDeposits().catch(() => {});
@@ -612,12 +650,17 @@
     }
 
     async function onDeposit(tx) {
+      const previousFlow = writingFlow;
+      writingFlow = "payin";
+      try {
       const from = (tx.ExternalSourceAddresses && tx.ExternalSourceAddresses[0]) || "";
+      screened = { tx, held: false };
+      syncSweepButton();
       pushEvent({
         tag: "Vault history",
         tone: "ok",
-        title: "Deposit observed on Corporate A",
-        body: "Transaction history matched collections index 1. Screening that transfer now.",
+        title: "Deposit observed on Corporate Client A",
+        body: "Transaction history matched collections index 1.",
         json: {
           to: addresses.corpA.Address,
           from: from,
@@ -626,66 +669,210 @@
           txHash: tx.TxHash,
         },
       });
-      setListen("Deposit seen. Screening with Chainalysis.");
-      try {
-        const response = await vault("/api/compliance/screen/deposit", {
+      setListen("Deposit seen. Sweep can run. The top card is a mainnet example, not this deposit.");
+      pushEvent({
+        tag: "Screen",
+        tone: "ok",
+        title: "POST /api/compliance/screen/deposit",
+        body: "The screen route for this deposit. This page does not call it on Sepolia.",
+        json: {
           asset: "USDC",
-          blockchain: "polygon",
+          blockchain: "ethereum",
           txHash: tx.TxHash,
           address: addresses.corpA.Address,
           amount: tx.Amount,
           isInternal: false,
-        });
-        const alerts = Array.isArray(response.alerts) ? response.alerts : [];
-        screened = { tx, response, held: alerts.length > 0 };
-        setListen(screened.held
-          ? "Chainalysis returned alerts. Sweep stays locked."
-          : "Chainalysis response is in. Sweep can run.");
-        pushEvent({
-          tag: "Screen",
-          tone: screened.held ? "bad" : "ok",
-          title: "POST /api/compliance/screen/deposit",
-          body: screened.held
-            ? "alerts is not empty. Do not sweep this deposit."
-            : "Vault registered the transfer as RECEIVED and returned the Chainalysis body.",
-          json: response,
-        });
-      } catch (err) {
-        const detail = err.detail || { message: err.message };
-        const unindexed = String((detail && detail.err) || err.message || "").includes("no updates/alerts");
-        screened = { tx, response: detail, held: unindexed, error: true };
-        if (unindexed) {
-          setListen("This Amoy transfer was not screened. Sweep stays locked. The top card is a mainnet example, not this deposit.");
-          pushEvent({
-            tag: "Screen",
-            tone: "warn",
-            title: err.message,
-            body: "Chainalysis accepted the registration, then never set updatedAt. Polygon in that API is Polygon mainnet. Amoy and Sepolia are not KYT networks, so this 500 is not a clear.",
-            json: detail,
-          });
-          pushEvent({
-            tag: "Screen",
-            tone: "warn",
-            title: "Example mainnet response, not this deposit",
-            body: "A real Ethereum or Polygon mainnet transfer can return this 200. Empty alerts is what would unlock Sweep. This sample was not returned for the Amoy hash.",
-            json: MAINNET_SCREEN_EXAMPLE,
-          });
-        } else {
-          setListen("Chainalysis returned an error. Sweep can run after you read that body.");
-          pushEvent({
-            tag: "Screen",
-            tone: "warn",
-            title: err.message,
-            body: "The screen call finished with an error. Sweep unlocks so the payment can continue.",
-            json: detail,
-          });
-        }
-      }
+        },
+      });
+      pushEvent({
+        tag: "Screen",
+        tone: "warn",
+        title: "Example mainnet response, not this deposit",
+        body: "A real Ethereum or Polygon mainnet transfer can return this 200. This sample was not returned for the Sepolia hash. Sweep uses the observed deposit.",
+        json: MAINNET_SCREEN_EXAMPLE,
+      });
       syncSweepButton();
+      } finally {
+        writingFlow = previousFlow;
+      }
+    }
+
+    function restrictionCopy(rule) {
+      const next = { RestrictionID: rule.RestrictionID };
+      if (Array.isArray(rule.Approvers) && rule.Approvers.length > 0) next.Approvers = rule.Approvers;
+      for (const key of ["Amount", "Fee", "Symbol", "Source", "Destination", "ExternalDestination", "TransactionFunction", "TestNetwork", "Initiator"]) {
+        if (rule[key] !== undefined && rule[key] !== null) next[key] = rule[key];
+      }
+      return next;
+    }
+
+    function payoutHotAllowList(rules) {
+      return (rules || []).find((rule) => {
+        const sources = (rule.Source && rule.Source.Only) || [];
+        const sourceMatch = sources.some((source) => source.MasterKeyName === "Default" && source.AccountName === "payout-hot");
+        const isBlock = !rule.Approvers || rule.Approvers.length === 0;
+        const except = rule.ExternalDestination && rule.ExternalDestination.Except;
+        return sourceMatch && isBlock && Array.isArray(except);
+      });
+    }
+
+    async function showFloat() {
+      setListen("Reading the payout-hot balance.");
+      const page = await vault("/api/vaults?page=1&pageSize=100&search_name=payout-hot");
+      const rows = (page && page.Vaults) || [];
+      const account = rows.find((row) => row.Name === "payout-hot");
+      if (!account) {
+        throw Object.assign(new Error("payout-hot was not in GET /api/vaults"), { detail: page });
+      }
+      const usdc = (account.Assets || []).find((asset) => asset.Asset === "USDC" || sameAddr(asset.CAIP19, USDC));
+      const amount = usdc ? usdc.Amount : "0";
+      setListen("payout-hot USDC balance is " + amount + ".");
+      pushEvent({
+        tag: "Vault balance",
+        tone: "ok",
+        title: "GET /api/vaults?search_name=payout-hot",
+        body: "USDC on payout-hot is " + amount + ". Treasury would top up or sweep this float against the operating band.",
+        json: account,
+      });
+    }
+
+    async function updateAllowList() {
+      const input = document.getElementById("worker-address");
+      const address = String((input && input.value) || "").trim();
+      if (!/^0x[0-9a-fA-F]{40}$/.test(address)) {
+        setListen("Enter a worker address: 0x followed by 40 hex characters.");
+        return;
+      }
+      workerAddress = address;
+      setListen("Reading payout-hot transaction restrictions.");
+      const rules = await vault("/api/cwp/restrictions/transaction");
+      const block = payoutHotAllowList(rules);
+      if (!block) {
+        const add = {
+          RestrictionID: "payout-hot-external-allow-list",
+          Source: { Only: [{ MasterKeyName: "Default", AccountName: "payout-hot" }] },
+          ExternalDestination: { Except: [address] },
+        };
+        const operationId = "allow-worker-" + Date.now();
+        const request = withInitiator({ OperationID: operationId, Add: add });
+        const started = await vault("/api/cwp/operations/start/updateTransactionRestriction", request);
+        setListen("Allow-list create started. An approver must confirm this policy change.");
+        pushEvent({
+          tag: "Policy",
+          tone: "ok",
+          title: "POST /api/cwp/operations/start/updateTransactionRestriction",
+          body: "No payout-hot Block existed. This adds a Block for Default / payout-hot whose ExternalDestination Except is the worker address.",
+          json: { request: request, response: started },
+        });
+        const status = await waitStatus(operationId, 8);
+        const failed = status.Status === "Failed";
+        setListen(failed ? "Allow-list update failed." : "Allow-list update " + status.Status + ".");
+        pushEvent({
+          tag: "CWP status",
+          tone: failed ? "bad" : "ok",
+          title: "update transaction restriction " + status.Status,
+          body: status.Status === "Succeeded"
+            ? "The payout-hot allow-list now includes the worker address."
+            : "If status is still pending, confirm the policy change in ApproverApp. The automated approver does not sign restriction updates.",
+          json: status,
+        });
+        return;
+      }
+      const except = (block.ExternalDestination.Except || []).slice();
+      if (except.some((item) => sameAddr(item, address))) {
+        setListen("That worker address is already on the payout-hot allow-list.");
+        pushEvent({
+          tag: "Policy",
+          tone: "ok",
+          title: "Allow-list already contains this address",
+          body: "No update was started.",
+          json: block,
+        });
+        return;
+      }
+      except.push(address);
+      const add = restrictionCopy(block);
+      add.ExternalDestination = Object.assign({}, block.ExternalDestination, { Except: except });
+      const operationId = "allow-worker-" + Date.now();
+      const request = withInitiator({ OperationID: operationId, Add: add });
+      const started = await vault("/api/cwp/operations/start/updateTransactionRestriction", request);
+      setListen("Allow-list update started. An approver must confirm this policy change.");
+      pushEvent({
+        tag: "Policy",
+        tone: "ok",
+        title: "POST /api/cwp/operations/start/updateTransactionRestriction",
+        body: "Full replace of restriction " + block.RestrictionID + ". ExternalDestination Except now includes the worker address.",
+        json: { request: request, response: started },
+      });
+      const status = await waitStatus(operationId, 8);
+      const failed = status.Status === "Failed";
+      setListen(failed ? "Allow-list update failed." : "Allow-list update " + status.Status + ".");
+      pushEvent({
+        tag: "CWP status",
+        tone: failed ? "bad" : "ok",
+        title: "update transaction restriction " + status.Status,
+        body: status.Status === "Succeeded"
+          ? "The payout-hot allow-list now includes the worker address."
+          : "If status is still pending, confirm the policy change in ApproverApp. The automated approver does not sign restriction updates.",
+        json: status,
+      });
+    }
+
+    async function payFromHot(address, label) {
+      const operationId = "payout-" + label.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Date.now();
+      const request = withInitiator({
+        OperationID: operationId,
+        CAIP19: USDC,
+        Asset: "USDC",
+        TestNetwork: true,
+        Source: { MasterKeyName: "Default", AccountName: "payout-hot", AddressIndex: 0 },
+        Destination: [{ Address: address, Amount: PAYOUT_AMOUNT }],
+      });
+      setListen("Starting makeTransaction to " + label + ".");
+      const started = await vault("/api/cwp/operations/start/makeTransaction", request);
+      pushEvent({
+        tag: "CWP",
+        tone: "ok",
+        title: "makeTransaction to " + label,
+        body: "1 USDC from payout-hot. Status polling follows the start response.",
+        json: { request: request, response: started },
+      });
+      const status = await waitStatus(operationId);
+      const raw = JSON.stringify(status);
+      const blocked = raw.includes("M0025") || status.Status === "Failed";
+      setListen(status.Status === "Succeeded"
+        ? "Payout to " + label + " settled."
+        : "Payout to " + label + " " + status.Status + ".");
+      pushEvent({
+        tag: "CWP status",
+        tone: status.Status === "Succeeded" ? "ok" : "bad",
+        title: label + " " + status.Status,
+        body: blocked && status.Status !== "Succeeded"
+          ? "The Block matched. The approver does not sign a blocked payout."
+          : "The Block skipped this destination. The approver confirms the payout.",
+        json: status,
+      });
+    }
+
+    async function payWorker() {
+      const input = document.getElementById("worker-address");
+      const address = String((input && input.value) || workerAddress || "").trim();
+      if (!/^0x[0-9a-fA-F]{40}$/.test(address)) {
+        setListen("Enter the Corporate Client Worker A address in the allow-list step first.");
+        return;
+      }
+      workerAddress = address;
+      await payFromHot(address, "Corporate Client Worker A");
+    }
+
+    async function payWorkerA() {
+      await payFromHot(WORKER_A, "random unapproved address");
     }
 
     async function sweep() {
       if (!canSweep()) return;
+      const previousFlow = writingFlow;
+      writingFlow = "payin";
       sweeping = true;
       creditShown = false;
       syncSweepButton();
@@ -694,7 +881,7 @@
       try {
         setListen("Starting generateConsolidationData.");
         sweepOps.data = dataId;
-        await vault("/api/cwp/operations/start/generateConsolidationData", {
+        await vault("/api/cwp/operations/start/generateConsolidationData", withInitiator({
           OperationID: dataId,
           CAIP19: USDC,
           Asset: "USDC",
@@ -702,7 +889,7 @@
           MasterKeyName: "Default",
           Account: "collections",
           SubAddressData: [{ Asset: "USDC", Amount: amount, SubAddressIndex: 1 }],
-        });
+        }));
         pushEvent({
           tag: "CWP events",
           tone: "ok",
@@ -718,10 +905,10 @@
         const sponsorId = "corp-a-sponsor-" + Date.now();
         sweepOps.sponsor = sponsorId;
         setListen("Starting sponsor from gas-sponsor.");
-        await vault("/api/cwp/operations/start/sponsor", {
+        await vault("/api/cwp/operations/start/sponsor", withInitiator({
           OperationID: sponsorId,
-          CAIP19: USDC,
-          Asset: "USDC",
+          CAIP19: NATIVE,
+          Asset: "ETH",
           TestNetwork: true,
           Source: { MasterKeyName: "Default", AccountName: "gas-sponsor", AddressIndex: 0 },
           ContractAddress: GATEWAY,
@@ -729,7 +916,7 @@
             Data: packed.Data,
             EIP7702Authorizations: packed.EIP7702Authorizations || [],
           },
-        });
+        }));
         pushEvent({
           tag: "CWP events",
           tone: "ok",
@@ -752,19 +939,26 @@
       } finally {
         sweeping = false;
         syncSweepButton();
+        writingFlow = previousFlow;
       }
     }
 
-    async function waitStatus(id) {
-      for (let i = 0; i < 40; i++) {
-        const status = await vault("/api/cwp/operations/id/" + encodeURIComponent(id) + "/status");
+    async function waitStatus(id, attempts) {
+      const limit = attempts || 40;
+      let status = null;
+      for (let i = 0; i < limit; i++) {
+        status = await vault("/api/cwp/operations/id/" + encodeURIComponent(id) + "/status");
         if (status.Status === "Succeeded" || status.Status === "Failed") return status;
-        await sleep(3000);
+        if (i < limit - 1) await sleep(3000);
       }
+      if (status) return status;
       throw new Error("Timed out waiting for " + id);
     }
 
     async function showCredit(operationId, status) {
+      const previousFlow = writingFlow;
+      writingFlow = "payin";
+      try {
       if (creditShown || !status || status.Status !== "Succeeded") {
         if (status && status.Status === "Failed") {
           pushEvent({
@@ -779,20 +973,20 @@
       }
       creditShown = true;
       const amount = screened && screened.tx ? screened.tx.Amount : "";
-      setListen("Sweep settled. The bank core can credit Corporate A.");
+      setListen("Sweep settled. The bank core can credit Corporate Client A.");
       pushEvent({
         tag: "Bank core",
         tone: "ok",
-        title: "Credit Corporate A demand account",
+        title: "Credit Corporate Client A demand account",
         body: "This is the signal the bank system would consume after the sweep settles. No issuer API is called.",
         json: {
           event: "vault.sweep.settled",
-          corporate: "Corporate A",
+          corporate: "Corporate Client A",
           demandAccountCredit: {
             currency: "USD",
             amount: amount,
             reference: operationId,
-            reason: "USDC sweep from the Corporate A deposit address settled on the central wallet",
+            reason: "USDC sweep from the Corporate Client A deposit address settled on the central wallet",
           },
           vault: {
             operationId: operationId,
@@ -804,6 +998,9 @@
           },
         },
       });
+      } finally {
+        writingFlow = previousFlow;
+      }
     }
 
     function connectEvents() {
@@ -814,34 +1011,49 @@
         : (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/api/cwp/events?type=operation_status_update";
       socket = new WebSocket(url);
       socket.onmessage = (message) => {
-        let event = null;
-        try { event = JSON.parse(message.data); } catch (err) { return; }
-        if (!event || event.Type !== "operation_status_update") return;
-        const payload = event.Payload || {};
-        if (payload.OperationID !== sweepOps.sponsor && payload.OperationID !== sweepOps.data) return;
-        pushEvent({
-          tag: "CWP events",
-          tone: "ok",
-          title: "operation_status_update",
-          body: "Hint only. Reading status for " + payload.OperationID + ".",
-          json: event,
-        });
-        if (payload.OperationID === sweepOps.sponsor) {
-          vault("/api/cwp/operations/id/" + encodeURIComponent(payload.OperationID) + "/status")
-            .then((status) => showCredit(payload.OperationID, status))
-            .catch(() => {});
+        const previousFlow = writingFlow;
+        writingFlow = "payin";
+        try {
+          let event = null;
+          try { event = JSON.parse(message.data); } catch (err) { return; }
+          if (!event || event.Type !== "operation_status_update") return;
+          const payload = event.Payload || {};
+          if (payload.OperationID !== sweepOps.sponsor && payload.OperationID !== sweepOps.data) return;
+          const hintKey = JSON.stringify(payload);
+          if (lastHints.get(payload.OperationID) === hintKey) return;
+          lastHints.set(payload.OperationID, hintKey);
+          pushEvent({
+            tag: "CWP events",
+            tone: "ok",
+            title: "operation_status_update",
+            body: "Hint only. Reading status for " + payload.OperationID + ".",
+            json: event,
+          });
+          if (payload.OperationID === sweepOps.sponsor) {
+            vault("/api/cwp/operations/id/" + encodeURIComponent(payload.OperationID) + "/status")
+              .then((status) => showCredit(payload.OperationID, status))
+              .catch(() => {});
+          }
+        } finally {
+          writingFlow = previousFlow;
         }
       };
       socket.onclose = () => { socket = null; };
       socket.onerror = () => {
         if (!sweepOps.sponsor && !sweepOps.data) return;
-        pushEvent({
-          tag: "CWP events",
-          tone: "warn",
-          title: "Events socket did not stay open",
-          body: "Status polling still runs for the sweep.",
-          json: { url: url },
-        });
+        const previousFlow = writingFlow;
+        writingFlow = "payin";
+        try {
+          pushEvent({
+            tag: "CWP events",
+            tone: "warn",
+            title: "Events socket did not stay open",
+            body: "Status polling still runs for the sweep.",
+            json: { url: url },
+          });
+        } finally {
+          writingFlow = previousFlow;
+        }
       };
     }
 
@@ -881,7 +1093,7 @@
           button.type = "button";
           button.className = "primary";
           button.style.marginTop = "10px";
-          button.textContent = "Sweep Corporate A";
+          button.textContent = "Sweep Corporate Client A";
           button.disabled = !canSweep();
           button.addEventListener("click", (event) => {
             event.stopPropagation();
@@ -889,13 +1101,65 @@
           });
           el.appendChild(button);
         }
+        if (step.action === "balance") {
+          appendAction(el, "Show payout-hot balance", showFloat);
+        }
+        if (step.action === "allowlist") {
+          const input = document.createElement("input");
+          input.id = "worker-address";
+          input.className = "field";
+          input.type = "text";
+          input.spellcheck = false;
+          input.placeholder = "0x Corporate Client Worker A address";
+          input.value = workerAddress;
+          input.addEventListener("click", (event) => event.stopPropagation());
+          input.addEventListener("input", () => { workerAddress = input.value.trim(); });
+          el.appendChild(input);
+          appendAction(el, "Update payout-hot allow-list", updateAllowList);
+        }
+        if (step.action === "pay-worker") {
+          appendAction(el, "Pay Corporate Client Worker A", payWorker);
+        }
+        if (step.action === "pay-worker-a") {
+          appendAction(el, "Pay random unapproved address", payWorkerA);
+        }
         el.addEventListener("click", () => {
           document.querySelectorAll(".step").forEach((n) => n.classList.remove("current"));
           el.classList.add("current");
-          if (current === "payout" && step.event) pushEvent(step.event);
+          if (current === "payout" && step.event && !step.action) pushEvent(step.event);
         });
         stepsEl.appendChild(el);
       });
+      showSignals();
+    }
+
+    function appendAction(el, label, action) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "primary";
+      button.style.marginTop = "10px";
+      button.textContent = label;
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const flow = current === "payout" ? "payout" : "payin";
+        button.disabled = true;
+        const previous = writingFlow;
+        writingFlow = flow;
+        Promise.resolve(action()).catch((err) => {
+          setListen(label + " failed.");
+          pushEvent({
+            tag: "Vault",
+            tone: "bad",
+            title: err.message,
+            body: label + " did not succeed.",
+            json: err.detail || { message: err.message },
+          });
+        }).finally(() => {
+          writingFlow = previous;
+          button.disabled = false;
+        });
+      });
+      el.appendChild(button);
     }
 
     function pushEvent(event) {
@@ -911,6 +1175,8 @@
       body.textContent = event.body;
       const pre = document.createElement("pre");
       pre.textContent = JSON.stringify(event.json, null, 2);
+      el.dataset.flow = activeSignalFlow();
+      el.hidden = current !== el.dataset.flow;
       el.append(tag, title, body, pre);
       logEl.prepend(el);
     }
@@ -918,20 +1184,30 @@
     document.getElementById("payin").onclick = () => { current = "payin"; render(); };
     document.getElementById("payout").onclick = () => { current = "payout"; render(); };
     document.getElementById("accounts").onclick = () => { current = "map"; render(); };
-    document.getElementById("reset").onclick = () => { logEl.innerHTML = ""; render(); };
-    try {
-      const saved = sessionStorage.getItem("paymentsDemoAddresses");
-      if (saved) {
-        addresses = JSON.parse(saved);
-        paintAddresses();
-        setListen("Watching Corporate A for an Amoy USDC deposit.");
-        startWatch();
+    document.getElementById("reset").onclick = () => {
+      const which = current === "payout" ? "payout" : "payin";
+      for (const el of [...logEl.children]) {
+        if (el.dataset.flow === which) el.remove();
       }
-    } catch (err) {
-      addresses = null;
-    }
-    connectEvents();
-    render();
+      listenByFlow[which] = "";
+      if (which === "payin") lastHints.clear();
+      showSignals();
+    };
+    loadConsoleConfig().catch(() => { initiatorId = ""; }).then(() => {
+      try {
+        const saved = sessionStorage.getItem("paymentsDemoAddressesSepolia");
+        if (saved) {
+          addresses = JSON.parse(saved);
+          paintAddresses();
+          setListen("Watching Corporate Client A for a Sepolia USDC deposit.");
+          startWatch();
+        }
+      } catch (err) {
+        addresses = null;
+      }
+      connectEvents();
+      render();
+    });
   </script>
 </body>
 </html>
